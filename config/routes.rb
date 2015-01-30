@@ -1,5 +1,5 @@
 DiscourseAkismet::Engine.routes.draw do
-  resource :admin_mod_queue, path: "/", constraints: AdminConstraint.new, only: [:index] do
+  resource :admin_mod_queue, path: "/", constraints: StaffConstraint.new, only: [:index] do
     collection do
       get    "/"            => "admin_mod_queue#index"
       get    "index"        => "admin_mod_queue#index"
