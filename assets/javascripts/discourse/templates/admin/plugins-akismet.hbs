@@ -20,7 +20,7 @@
     {{d-button label="admin.plugins.change_settings" icon="gear" class='settings-button' action=(route-action "showSettings")}}
   {{/if}}
 
-  {{d-button action=( action "refresh") icon="refresh" class="btn-primary" label="akismet.refresh" disabled=performingAction}}
+  {{d-button action=(action "refresh") icon="refresh" class="btn-primary" label="akismet.refresh" disabled=performingAction}}
 
   {{#if model.length}}
     <h3 class='review-queue'>{{i18n "akismet.posts_to_review"}}</h3>
