@@ -4,9 +4,9 @@ module Jobs
     def execute(args)
       return if args[:user_id].blank?
 
-      user = User.where(id: args[:user_id]).first
+      user = User.find_by(id: args[:user_id])
 
-      return if user.blank?
+      return if user.nil?
 
       DiscourseAkismet::User.new(user).check_for_spam
     end

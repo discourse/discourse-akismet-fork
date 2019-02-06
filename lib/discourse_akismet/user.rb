@@ -1,5 +1,5 @@
 module DiscourseAkismet
-	class User
+  class User
 
     def initialize(user)
       @user = user
