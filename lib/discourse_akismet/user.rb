@@ -37,7 +37,8 @@ module DiscourseAkismet
         content_type: 'user-tl0',
         permalink: "#{Discourse.base_url}/u/#{@user.username}",
         comment_author: @user.username,
-        comment_content: profile_content
+        comment_content: profile_content,
+        user_ip: @user.custom_fields['AKISMET_IP_ADDRESS']
       }
 
       if SiteSetting.akismet_transmit_email?
