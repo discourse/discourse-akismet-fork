@@ -31,7 +31,6 @@ module DiscourseAkismet
       true
     end
 
-
     def args
       extra_args = {
         content_type: 'user-tl0',
@@ -51,11 +50,7 @@ module DiscourseAkismet
     def move_to_state(state)
       return unless should_check_for_spam?
 
-      to_update = {
-        DiscourseAkismet::AKISMET_STATE_KEY => state
-      }
-
-      @user.upsert_custom_fields(to_update)
+      @user.upsert_custom_fields(DiscourseAkismet::AKISMET_STATE_KEY => state)
     end
 
     def profile_content
@@ -63,7 +58,14 @@ module DiscourseAkismet
     end
 
     def self.to_check
-      ::User.where(trust_level: 0).where.not(id: UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY).pluck(:user_id))
+      ::User.where(trust_level: 0).where.not(id: UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY).select(:user_id))
+    end
+
+    def self.has_check_user_job_already_enqueued?(user_id)
+      Jobs::CheckAkismetUser.jobs.select do |job|
+        job['class'] == 'Jobs::CheckAkismetUser' && job['args'] &&
+        job['args'].select { |arg| arg['user_id'] == user_id }.count > 0
+      end.any?
     end
 
   end

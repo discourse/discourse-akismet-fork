@@ -4,17 +4,15 @@ describe DiscourseAkismet::User do
   before do
     SiteSetting.akismet_api_key = 'not_a_real_key'
     SiteSetting.akismet_enabled = true
-  end
 
-  let(:user) { Fabricate(:newuser) }
-
-  random_bio = 'random profile'
-
-  before do
     user_profile = user.user_profile
     user_profile.bio_raw = random_bio
     user_profile.save
   end
+
+  let(:user) { Fabricate(:newuser) }
+
+  let(:random_bio) { 'random profile' }
 
   it 'checks job is enqueued on user create' do
     user
@@ -23,8 +21,7 @@ describe DiscourseAkismet::User do
       job['args'].select { |arg| arg['user_id'] == user.id }.count == 1
     end
 
-    # one on create and one on profile update in before block
-    expect(jobs.count).to eq(2)
+    expect(jobs.count).to eq(1)
   end
 
   describe '#args' do
@@ -74,16 +71,6 @@ describe DiscourseAkismet::User do
 
   end
 
-  describe '#profile_content' do
-
-    it 'checks correct content is fetched for given user' do
-      result = described_class.new(user).profile_content
-
-      expect(result).to eq(random_bio)
-    end
-
-  end
-
   describe '#should_check_for_spam' do
 
     it 'does not check when user is blank' do
@@ -129,7 +116,7 @@ describe DiscourseAkismet::User do
       result = described_class.to_check
       expect(result.where(id: user.id).count).to eq(1)
 
-      user.upsert_custom_fields({DiscourseAkismet::AKISMET_STATE_KEY => DiscourseAkismet::NEEDS_REVIEW})
+      user.upsert_custom_fields(DiscourseAkismet::AKISMET_STATE_KEY => DiscourseAkismet::NEEDS_REVIEW)
       result = described_class.to_check
       expect(result.where(id: user.id).count).to eq(0)
     end

@@ -7,7 +7,7 @@ describe Jobs::CheckAkismetUser do
   let(:mock_response) { Struct.new(:status, :body, :headers) }
 
   before do
-  	SiteSetting.akismet_api_key = 'not_a_real_key'
+    SiteSetting.akismet_api_key = 'not_a_real_key'
     SiteSetting.akismet_enabled = true
 
     user_profile = user.user_profile
@@ -16,9 +16,9 @@ describe Jobs::CheckAkismetUser do
   end
 
   it 'moves to needs_review for tl0 spam user' do
-  	Excon.expects(:post).returns(mock_response.new(200, 'true'))
+    Excon.expects(:post).returns(mock_response.new(200, 'true'))
 
-   	described_class.new.execute({user_id: user.id})
+    described_class.new.execute({user_id: user.id})
 
     expect(user.custom_fields[DiscourseAkismet::AKISMET_STATE_KEY]).to eq(DiscourseAkismet::NEEDS_REVIEW)
   end

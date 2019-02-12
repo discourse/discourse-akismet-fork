@@ -66,11 +66,11 @@ after_initialize do
   end
 
   on(:user_profile_created) do |user_profile|
-    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id)
+    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id) unless DiscourseAkismet::User.has_check_user_job_already_enqueued?(user_profile.user_id)
   end
 
   on(:user_profile_updated) do |user_profile|
-    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id)
+    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id) unless DiscourseAkismet::User.has_check_user_job_already_enqueued?(user_profile.user_id)
   end
 
   add_to_class(:guardian, :can_review_akismet?) do

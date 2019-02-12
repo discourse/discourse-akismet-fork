@@ -30,7 +30,6 @@ describe Jobs::CheckForSpamUsers do
     described_class.new.execute
 
     expect(user.custom_fields[DiscourseAkismet::AKISMET_STATE_KEY]).to be_nil
-
   end
 
 end
