@@ -10,7 +10,7 @@ enabled_site_setting :akismet_enabled
 load File.expand_path('../lib/discourse_akismet.rb', __FILE__)
 load File.expand_path('../lib/akismet.rb', __FILE__)
 load File.expand_path('../lib/discourse_akismet/engine.rb', __FILE__)
-load File.expand_path('../lib/discourse_akismet/user.rb', __FILE__)
+load File.expand_path('../lib/discourse_akismet/check_spam_user.rb', __FILE__)
 
 register_asset "stylesheets/mod_queue_styles.scss"
 
@@ -66,11 +66,11 @@ after_initialize do
   end
 
   on(:user_profile_created) do |user_profile|
-    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id) unless DiscourseAkismet::User.has_check_user_job_already_enqueued?(user_profile.user_id)
+    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id) unless Jobs.has_same_job_been_enqueued?('check_akismet_user', user_id: user_profile.user_id)
   end
 
   on(:user_profile_updated) do |user_profile|
-    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id) unless DiscourseAkismet::User.has_check_user_job_already_enqueued?(user_profile.user_id)
+    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id) unless Jobs.has_same_job_been_enqueued?('check_akismet_user', user_id: user_profile.user_id)
   end
 
   add_to_class(:guardian, :can_review_akismet?) do

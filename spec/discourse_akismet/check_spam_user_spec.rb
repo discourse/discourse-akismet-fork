@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-describe DiscourseAkismet::User do
+describe DiscourseAkismet::CheckSpamUser do
   before do
     SiteSetting.akismet_api_key = 'not_a_real_key'
     SiteSetting.akismet_enabled = true

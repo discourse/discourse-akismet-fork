@@ -6,8 +6,8 @@ module Jobs
       return unless SiteSetting.akismet_enabled?
       return if SiteSetting.akismet_api_key.blank?
 
-      DiscourseAkismet::User.to_check.each do |user|
-        DiscourseAkismet::User.new(user).check_for_spam
+      DiscourseAkismet::CheckSpamUser.to_check.each do |user|
+        DiscourseAkismet::CheckSpamUser.new(user).check_for_spam
       end
     end
   end

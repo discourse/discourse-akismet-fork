@@ -1,5 +1,5 @@
 module DiscourseAkismet
-  class User
+  class CheckSpamUser
 
     def initialize(user)
       @user = user
@@ -59,13 +59,6 @@ module DiscourseAkismet
 
     def self.to_check
       ::User.where(trust_level: 0).where.not(id: UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY).select(:user_id))
-    end
-
-    def self.has_check_user_job_already_enqueued?(user_id)
-      Jobs::CheckAkismetUser.jobs.select do |job|
-        job['class'] == 'Jobs::CheckAkismetUser' && job['args'] &&
-        job['args'].select { |arg| arg['user_id'] == user_id }.count > 0
-      end.any?
     end
 
   end
