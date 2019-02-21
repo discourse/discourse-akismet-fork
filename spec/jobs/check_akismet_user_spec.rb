@@ -18,7 +18,7 @@ describe Jobs::CheckAkismetUser do
   it 'moves to needs_review for tl0 spam user' do
     Excon.expects(:post).returns(mock_response.new(200, 'true'))
 
-    described_class.new.execute({user_id: user.id})
+    described_class.new.execute({user_id: user.id, profile_content: user.user_profile.bio_raw})
 
     expect(user.custom_fields[DiscourseAkismet::AKISMET_STATE_KEY]).to eq(DiscourseAkismet::NEEDS_REVIEW)
   end
@@ -26,8 +26,7 @@ describe Jobs::CheckAkismetUser do
   it 'moves to checked for tl0 user who is not selected as spam' do
     Excon.expects(:post).returns(mock_response.new(200, 'false'))
 
-    described_class.new.execute({user_id: user.id})
-
+    described_class.new.execute({user_id: user.id, profile_content: user.user_profile.bio_raw})
     expect(user.custom_fields[DiscourseAkismet::AKISMET_STATE_KEY]).to eq(DiscourseAkismet::CHECKED)
   end
 
@@ -35,7 +34,7 @@ describe Jobs::CheckAkismetUser do
     user.trust_level = 1
     user.save
 
-    described_class.new.execute({user_id: user.id})
+    described_class.new.execute({user_id: user.id, profile_content: user.user_profile.bio_raw})
 
     expect(user.custom_fields[DiscourseAkismet::AKISMET_STATE_KEY]).to be_nil
   end

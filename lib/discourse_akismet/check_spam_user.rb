@@ -1,8 +1,9 @@
 module DiscourseAkismet
   class CheckSpamUser
 
-    def initialize(user)
+    def initialize(user, profile_content)
       @user = user
+      @profile_content = profile_content
     end
 
     def check_for_spam
@@ -24,9 +25,7 @@ module DiscourseAkismet
 
       return false if @user.trust_level != TrustLevel[0]
 
-      return false if @user.custom_fields[DiscourseAkismet::AKISMET_STATE_KEY].present?
-
-      return false if profile_content.blank?
+      return false if @profile_content.blank?
 
       true
     end
@@ -36,7 +35,7 @@ module DiscourseAkismet
         content_type: 'user-tl0',
         permalink: "#{Discourse.base_url}/u/#{@user.username}",
         comment_author: @user.username,
-        comment_content: profile_content,
+        comment_content: @profile_content,
         user_ip: @user.custom_fields['AKISMET_IP_ADDRESS']
       }
 
@@ -51,10 +50,6 @@ module DiscourseAkismet
       return unless should_check_for_spam?
 
       @user.upsert_custom_fields(DiscourseAkismet::AKISMET_STATE_KEY => state)
-    end
-
-    def profile_content
-      @user.user_profile.bio_raw || ''
     end
 
     def self.to_check

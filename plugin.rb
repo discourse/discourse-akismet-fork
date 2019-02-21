@@ -66,11 +66,11 @@ after_initialize do
   end
 
   on(:user_profile_created) do |user_profile|
-    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id) unless Jobs.has_same_job_been_enqueued?('check_akismet_user', user_id: user_profile.user_id)
+    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id, profile_content: user_profile.bio_raw) if DiscourseAkismet::CheckSpamUser.new(user_profile.user, user_profile.bio_raw).should_check_for_spam?
   end
 
-  on(:user_profile_updated) do |user_profile|
-    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id) unless Jobs.has_same_job_been_enqueued?('check_akismet_user', user_id: user_profile.user_id)
+  on(:user_profile_bio_updated) do |user_profile|
+    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id, profile_content: user_profile.bio_raw) if DiscourseAkismet::CheckSpamUser.new(user_profile.user, user_profile.bio_raw).should_check_for_spam?
   end
 
   add_to_class(:guardian, :can_review_akismet?) do

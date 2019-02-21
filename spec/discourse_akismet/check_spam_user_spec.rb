@@ -27,7 +27,7 @@ describe DiscourseAkismet::CheckSpamUser do
   describe '#args' do
 
     it 'should return args for a user' do
-      result = described_class.new(user).args
+      result = described_class.new(user, user.user_profile.bio_raw).args
 
       expect(result[:comment_content]).to eq(random_bio)
       expect(result[:comment_author]).to eq(user.username)
@@ -39,7 +39,7 @@ describe DiscourseAkismet::CheckSpamUser do
     it 'should return nil in email when akismet akismet_transmit_email is false' do
       SiteSetting.akismet_transmit_email = false
 
-      result = described_class.new(user).args
+      result = described_class.new(user, user.user_profile.bio_raw).args
 
       expect(result[:comment_author_email]).to be_nil
     end
@@ -49,7 +49,7 @@ describe DiscourseAkismet::CheckSpamUser do
   describe '#move_to_state' do
 
     it 'moves user to new state' do
-      described_class.new(user).move_to_state(DiscourseAkismet::NEEDS_REVIEW)
+      described_class.new(user, user.user_profile.bio_raw).move_to_state(DiscourseAkismet::NEEDS_REVIEW)
 
       akismet_state = UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY)
 
@@ -59,13 +59,13 @@ describe DiscourseAkismet::CheckSpamUser do
 
     it 'does not move user to new state if setting is disabled or user is nil' do
       SiteSetting.akismet_enabled = false
-      described_class.new(user).move_to_state(DiscourseAkismet::NEEDS_REVIEW)
+      described_class.new(user, user.user_profile.bio_raw).move_to_state(DiscourseAkismet::NEEDS_REVIEW)
 
       akismet_state = UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY, user_id: user.id)
       expect(akismet_state.count).to eq(0)
 
       SiteSetting.akismet_enabled = true
-      described_class.new(nil).move_to_state(DiscourseAkismet::NEEDS_REVIEW)
+      described_class.new(nil, user.user_profile.bio_raw).move_to_state(DiscourseAkismet::NEEDS_REVIEW)
       expect(akismet_state.reload.count).to eq(0)
     end
 
@@ -74,28 +74,28 @@ describe DiscourseAkismet::CheckSpamUser do
   describe '#should_check_for_spam' do
 
     it 'does not check when user is blank' do
-      expect(described_class.new(nil).should_check_for_spam?).to eq(false)
+      expect(described_class.new(nil, user.user_profile.bio_raw).should_check_for_spam?).to eq(false)
     end
 
     it 'checks when user is level 0' do
-      expect(described_class.new(user).should_check_for_spam?).to eq(true)
+      expect(described_class.new(user, user.user_profile.bio_raw).should_check_for_spam?).to eq(true)
     end
 
     it 'does not check when site setting is disabled' do
       SiteSetting.akismet_enabled = false
 
-      expect(described_class.new(user).should_check_for_spam?).to eq(false)
+      expect(described_class.new(user, user.user_profile.bio_raw).should_check_for_spam?).to eq(false)
 
       SiteSetting.akismet_enabled = true
       SiteSetting.akismet_api_key = nil
-      expect(described_class.new(user).should_check_for_spam?).to eq(false)
+      expect(described_class.new(user, user.user_profile.bio_raw).should_check_for_spam?).to eq(false)
     end
 
     it 'does not check when user trust level is not 0' do
       user.trust_level = 1
       user.save
 
-      expect(described_class.new(user).should_check_for_spam?).to eq(false)
+      expect(described_class.new(user, user.user_profile.bio_raw).should_check_for_spam?).to eq(false)
     end
 
     it 'returns false when user bio is empty' do
@@ -103,7 +103,7 @@ describe DiscourseAkismet::CheckSpamUser do
       user_profile.bio_raw = nil
       user_profile.save
 
-      expect(described_class.new(user).should_check_for_spam?).to eq(false)
+      expect(described_class.new(user, user.user_profile.bio_raw).should_check_for_spam?).to eq(false)
     end
 
   end

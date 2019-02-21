@@ -7,7 +7,7 @@ module Jobs
       return if SiteSetting.akismet_api_key.blank?
 
       DiscourseAkismet::CheckSpamUser.to_check.each do |user|
-        DiscourseAkismet::CheckSpamUser.new(user).check_for_spam
+        DiscourseAkismet::CheckSpamUser.new(user, user.user_profile.bio_raw).check_for_spam
       end
     end
   end
