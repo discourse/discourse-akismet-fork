@@ -65,12 +65,14 @@ after_initialize do
     end
   end
 
-  on(:user_profile_created) do |user_profile|
-    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id, profile_content: user_profile.bio_raw) if DiscourseAkismet::CheckSpamUser.new(user_profile.user, user_profile.bio_raw).should_check_for_spam?
+  self.add_model_callback(UserProfile, :after_commit, on: :create) do
+    Jobs.enqueue(:check_akismet_user, user_id: self.user_id, profile_content: self.bio_raw) if DiscourseAkismet::CheckSpamUser.new(self.user, self.bio_raw).should_check_for_spam?
   end
 
-  on(:user_profile_bio_updated) do |user_profile|
-    Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id, profile_content: user_profile.bio_raw) if DiscourseAkismet::CheckSpamUser.new(user_profile.user, user_profile.bio_raw).should_check_for_spam?
+  self.add_model_callback(UserProfile, :after_commit, on: :update) do
+    if self.bio_raw_previously_changed?
+      Jobs.enqueue(:check_akismet_user, user_id: self.user_id, profile_content: self.bio_raw) if DiscourseAkismet::CheckSpamUser.new(self.user, self.bio_raw).should_check_for_spam?
+    end
   end
 
   add_to_class(:guardian, :can_review_akismet?) do
