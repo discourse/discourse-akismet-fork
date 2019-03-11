@@ -99,8 +99,8 @@ describe DiscourseAkismet do
     end
 
     def stub_spam_confirmation
-      mock_response = Struct.new(:status, :body, :headers)
-      Excon.expects(:post).returns(mock_response.new(200, 'true'))
+      comment_check_url = "https://#{SiteSetting.akismet_api_key}.rest.akismet.com/1.1/comment-check"
+      stub_request(:post, comment_check_url).to_return(body: 'true')
     end
   end
 end
