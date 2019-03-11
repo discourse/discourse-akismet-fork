@@ -82,7 +82,9 @@ module DiscourseAkismet
 
         # If the post is spam, mark it for review and destroy it
         if client.comment_check(DiscourseAkismet.args_for_post(post))
-          PostDestroyer.new(Discourse.system_user, post).destroy
+          spam_reporter = Discourse.system_user
+
+          PostDestroyer.new(spam_reporter, post).destroy
           spam_count += 1
           DiscourseAkismet.move_to_state(post, 'needs_review')
 
@@ -93,6 +95,8 @@ module DiscourseAkismet
               topic_title: post.topic.title
             )
           end
+
+          ReviewableFlaggedPost.needs_review!(target: post, topic: post.topic, created_by: spam_reporter)
         else
           DiscourseAkismet.move_to_state(post, 'checked')
         end
@@ -101,7 +105,7 @@ module DiscourseAkismet
 
     # Trigger an event that akismet found spam. This allows people to
     # notify chat rooms or whatnot
-    DiscourseEvent.trigger(:akismet_found_spam, spam_count) if spam_count > 0
+    DiscourseEvent.trigger(:akismet_found_spam, spam_count) if spam_count.positive?
   end
 
   def self.stats

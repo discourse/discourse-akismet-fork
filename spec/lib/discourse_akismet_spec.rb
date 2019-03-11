@@ -84,4 +84,23 @@ describe DiscourseAkismet do
     end
   end
 
+  describe '#check_for_spam' do
+    it 'Creates a new ReviewableFlaggedPost when spam is confirmed by Akismet' do
+      post = Fabricate(:post)
+      DiscourseAkismet.move_to_state(post, 'new')
+
+      stub_spam_confirmation
+
+      DiscourseAkismet.check_for_spam(post)
+      reviewable_flagged_post = ReviewableFlaggedPost.last
+
+      expect(reviewable_flagged_post.status).to eq Reviewable.statuses[:pending]
+      expect(reviewable_flagged_post.post).to eq post
+    end
+
+    def stub_spam_confirmation
+      mock_response = Struct.new(:status, :body, :headers)
+      Excon.expects(:post).returns(mock_response.new(200, 'true'))
+    end
+  end
 end
