@@ -148,7 +148,7 @@ module DiscourseAkismet
 
     # Publish the new review count via message bus
     msg = { akismet_review_count: DiscourseAkismet.needs_review.count }
-    MessageBus.publish('/akismet_counts', msg, user_ids: ::User.staff.pluck(:id))
+    MessageBus.publish('/akismet_counts', msg, user_ids: User.staff.pluck(:id))
   end
 
   def self.munge_args(&block)

@@ -5,14 +5,12 @@ describe DiscourseAkismet::CheckSpamUser do
     SiteSetting.akismet_api_key = 'not_a_real_key'
     SiteSetting.akismet_enabled = true
 
-    user_profile = user.user_profile
-    user_profile.bio_raw = random_bio
-    user_profile.save
+    user.user_profile.update!(bio_raw: bio)
   end
 
   let(:user) { Fabricate(:newuser) }
 
-  let(:random_bio) { 'random profile' }
+  let(:bio) { 'random profile' }
 
   it 'checks job is enqueued on user create' do
     user
@@ -27,9 +25,9 @@ describe DiscourseAkismet::CheckSpamUser do
   describe '#args' do
 
     it 'should return args for a user' do
-      result = described_class.new(user, user.user_profile.bio_raw).args
+      result = described_class.new(user, user.user_profile.bio_raw).send(:args)
 
-      expect(result[:comment_content]).to eq(random_bio)
+      expect(result[:comment_content]).to eq(bio)
       expect(result[:comment_author]).to eq(user.username)
       expect(result[:permalink]).to eq("#{Discourse.base_url}/u/#{user.username}")
       expect(result[:content_type]).to eq('user-tl0')
@@ -39,7 +37,7 @@ describe DiscourseAkismet::CheckSpamUser do
     it 'should return nil in email when akismet akismet_transmit_email is false' do
       SiteSetting.akismet_transmit_email = false
 
-      result = described_class.new(user, user.user_profile.bio_raw).args
+      result = described_class.new(user, user.user_profile.bio_raw).send(:args)
 
       expect(result[:comment_author_email]).to be_nil
     end

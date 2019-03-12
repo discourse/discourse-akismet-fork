@@ -6,6 +6,8 @@ describe Jobs::CheckAkismetUser do
 
   let(:mock_response) { Struct.new(:status, :body, :headers) }
 
+  let(:akismet_url_regex) { /rest.akismet.com/ }
+
   before do
     SiteSetting.akismet_api_key = 'not_a_real_key'
     SiteSetting.akismet_enabled = true
@@ -16,7 +18,8 @@ describe Jobs::CheckAkismetUser do
   end
 
   it 'moves to needs_review for tl0 spam user' do
-    Excon.expects(:post).returns(mock_response.new(200, 'true'))
+    stub_request(:post, akismet_url_regex).
+        to_return(status: 200, body: "true", headers: {})
 
     described_class.new.execute({user_id: user.id, profile_content: user.user_profile.bio_raw})
 
@@ -24,7 +27,8 @@ describe Jobs::CheckAkismetUser do
   end
 
   it 'moves to checked for tl0 user who is not selected as spam' do
-    Excon.expects(:post).returns(mock_response.new(200, 'false'))
+    stub_request(:post, akismet_url_regex).
+        to_return(status: 200, body: "false", headers: {})
 
     described_class.new.execute({user_id: user.id, profile_content: user.user_profile.bio_raw})
     expect(user.custom_fields[DiscourseAkismet::AKISMET_STATE_KEY]).to eq(DiscourseAkismet::CHECKED)

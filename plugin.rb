@@ -66,12 +66,12 @@ after_initialize do
   end
 
   self.add_model_callback(UserProfile, :after_commit, on: :create) do
-    Jobs.enqueue(:check_akismet_user, user_id: self.user_id, profile_content: self.bio_raw) if DiscourseAkismet::CheckSpamUser.new(self.user, self.bio_raw).should_check_for_spam?
+    DiscourseAkismet::CheckSpamUser.enqueue_user_for_spam_check(self)
   end
 
   self.add_model_callback(UserProfile, :after_commit, on: :update) do
     if self.bio_raw_previously_changed?
-      Jobs.enqueue(:check_akismet_user, user_id: self.user_id, profile_content: self.bio_raw) if DiscourseAkismet::CheckSpamUser.new(self.user, self.bio_raw).should_check_for_spam?
+      DiscourseAkismet::CheckSpamUser.enqueue_user_for_spam_check(self)
     end
   end
 
@@ -82,6 +82,7 @@ after_initialize do
   add_to_serializer(:current_user, :akismet_review_count) do
     scope.can_review_akismet? ? DiscourseAkismet.needs_review.count : nil
   end
+
 end
 
 add_admin_route 'akismet.title', 'akismet'

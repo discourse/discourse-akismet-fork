@@ -10,13 +10,7 @@ module DiscourseAkismet
       return unless should_check_for_spam?
 
       DiscourseAkismet.with_client do |client|
-        if client.comment_check(args)
-          move_to_state(DiscourseAkismet::NEEDS_REVIEW)
-          # should we notify admin user for it?
-        else
-          move_to_state(DiscourseAkismet::CHECKED)
-        end
-
+        move_to_state(client.comment_check(args) ? DiscourseAkismet::NEEDS_REVIEW : DiscourseAkismet::CHECKED)
       end
     end
 
@@ -30,6 +24,23 @@ module DiscourseAkismet
       true
     end
 
+    def move_to_state(state)
+      return unless should_check_for_spam?
+
+      @user.upsert_custom_fields(DiscourseAkismet::AKISMET_STATE_KEY => state)
+    end
+
+    def self.to_check
+      # User.joins(:user_custom_fields).where(trust_level: 0).where('user_custom_fields.name != ?', DiscourseAkismet::AKISMET_STATE_KEY)
+      User.where(trust_level: 0).where.not(id: UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY).select(:user_id))
+    end
+
+    private
+
+    def self.enqueue_user_for_spam_check(user_profile)
+      Jobs.enqueue(:check_akismet_user, user_id: user_profile.user_id, profile_content: user_profile.bio_raw) if DiscourseAkismet::CheckSpamUser.new(user_profile.user, user_profile.bio_raw).should_check_for_spam?
+    end
+
     def args
       extra_args = {
         content_type: 'user-tl0',
@@ -40,20 +51,10 @@ module DiscourseAkismet
       }
 
       if SiteSetting.akismet_transmit_email?
-        extra_args[:comment_author_email] = @user.try(:email)
+        extra_args[:comment_author_email] = @user&.email
       end
 
       extra_args
-    end
-
-    def move_to_state(state)
-      return unless should_check_for_spam?
-
-      @user.upsert_custom_fields(DiscourseAkismet::AKISMET_STATE_KEY => state)
-    end
-
-    def self.to_check
-      ::User.where(trust_level: 0).where.not(id: UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY).select(:user_id))
     end
 
   end
