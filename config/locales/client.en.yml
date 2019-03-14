@@ -8,6 +8,7 @@ en:
             confirmed_spam: "confirmed spam"
             confirmed_spam_deleted: "confirmed spam and deleted user"
             dismissed: 'dismissed spam'
+            ignore: 'ignore spam'
 
     akismet:
       title: "Akismet"
@@ -17,6 +18,7 @@ en:
       refresh: "Refresh Posts"
       posts_to_review: "Posts to Review"
       dismiss: "Dismiss"
+      ignore: "Ignore"
 
       stats:
         scanned: "Scanned"
@@ -29,3 +31,5 @@ en:
       not_enabled: "Akismet is not enabled right now."
       change_settings: "Change Settings"
 
+      reviewer: "Akismet"
+      reviewer_description: "Automatically flagged by system"

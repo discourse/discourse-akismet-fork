@@ -11,8 +11,8 @@ load File.expand_path('../lib/discourse_akismet.rb', __FILE__)
 load File.expand_path('../lib/akismet.rb', __FILE__)
 load File.expand_path('../lib/discourse_akismet/engine.rb', __FILE__)
 
-register_asset "stylesheets/mod_queue_styles.scss"
-register_asset "stylesheets/reviewable_akismet_post_styles.scss"
+register_asset "stylesheets/mod-queue-styles.scss"
+register_asset "stylesheets/reviewable-akismet-post-styles.scss"
 
 after_initialize do
   require_dependency File.expand_path('../jobs/check_for_spam_posts.rb', __FILE__)

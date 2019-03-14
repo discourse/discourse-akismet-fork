@@ -96,6 +96,7 @@ describe DiscourseAkismet do
 
       expect(reviewable_akismet_post.status).to eq Reviewable.statuses[:pending]
       expect(reviewable_akismet_post.post).to eq post
+      expect(reviewable_akismet_post.reviewable_by_moderator).to eq true
     end
 
     def stub_spam_confirmation

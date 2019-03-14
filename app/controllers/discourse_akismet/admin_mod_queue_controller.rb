@@ -2,9 +2,9 @@ module DiscourseAkismet
   class AdminModQueueController < Admin::AdminController
     requires_plugin 'discourse-akismet'
 
-    def index
-      deprecation_notice
+    before_action :deprecation_notice
 
+    def index
       render_json_dump(
         posts: serialize_data(DiscourseAkismet.needs_review, PostSerializer, add_excerpt: true),
         enabled: SiteSetting.akismet_enabled?,
@@ -13,8 +13,6 @@ module DiscourseAkismet
     end
 
     def confirm_spam
-      deprecation_notice
-
       if defined?(ReviewableAkismetPost)
         reviewable.perform(current_user, :confirm_spam)
       else
@@ -26,8 +24,6 @@ module DiscourseAkismet
     end
 
     def allow
-      deprecation_notice
-
       if defined?(ReviewableAkismetPost)
         reviewable.perform(current_user, :not_spam)
       else
@@ -44,10 +40,8 @@ module DiscourseAkismet
     end
 
     def dismiss
-      deprecation_notice
-
       if defined?(ReviewableAkismetPost)
-        reviewable.perform(current_user, :dismiss)
+        reviewable.perform(current_user, :ignore)
       else
         DiscourseAkismet.move_to_state(post, 'dismissed')
         log_confirmation(post, 'dismissed')
@@ -57,8 +51,6 @@ module DiscourseAkismet
     end
 
     def delete_user
-      deprecation_notice
-
       if defined?(ReviewableAkismetPost)
         reviewable.perform(current_user, :confirm_delete)
       else

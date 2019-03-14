@@ -17,45 +17,36 @@ describe ReviewableAkismetPost do
     end
 
     it 'Adds the confirm spam action' do
-      expected_action_id = :confirm_spam
-
       actions = reviewable_actions(guardian)
 
-      expect(actions.has?(expected_action_id)).to be true
+      expect(actions.has?(:confirm_spam)).to be true
     end
 
     it 'Adds the not spam action' do
-      expected_action_id = :not_spam
-
       actions = reviewable_actions(guardian)
 
-      expect(actions.has?(expected_action_id)).to be true
+      expect(actions.has?(:not_spam)).to be true
     end
 
     it 'Adds the dismiss action' do
-      expected_action_id = :dismiss
-
       actions = reviewable_actions(guardian)
 
-      expect(actions.has?(expected_action_id)).to be true
+      expect(actions.has?(:ignore)).to be true
     end
 
     it 'Adds the confirm delete action' do
       admin = Fabricate(:admin)
       guardian = Guardian.new(admin)
-      expected_action_id = :confirm_delete
 
       actions = reviewable_actions(guardian)
 
-      expect(actions.has?(expected_action_id)).to be true
+      expect(actions.has?(:confirm_delete)).to be true
     end
 
     it 'Excludes the confirm delete action when the user is not an staff member' do
-      expected_action_id = :confirm_delete
-
       actions = reviewable_actions(guardian)
 
-      expect(actions.has?(expected_action_id)).to be false
+      expect(actions.has?(:confirm_delete)).to be false
     end
 
     def reviewable_actions(guardian)
@@ -145,9 +136,9 @@ describe ReviewableAkismetPost do
       end
     end
 
-    describe '#perform_dismiss' do
-      let(:action) { :dismiss }
-      let(:action_name) { 'dismissed' }
+    describe '#perform_ignore' do
+      let(:action) { :ignore }
+      let(:action_name) { 'ignored' }
 
       it_behaves_like 'It logs actions in the staff actions logger'
 

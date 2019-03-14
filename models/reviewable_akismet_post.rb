@@ -6,7 +6,7 @@ class ReviewableAkismetPost < Reviewable
 
     build_action(actions, :confirm_spam, icon: 'check')
     build_action(actions, :not_spam, icon: 'thumbs-up')
-    build_action(actions, :dismiss, icon: 'times')
+    build_action(actions, :ignore, icon: 'times')
     build_action(actions, :confirm_delete, icon: 'trash-alt', confirm: true) if guardian.is_staff?
   end
 
@@ -34,9 +34,9 @@ class ReviewableAkismetPost < Reviewable
     successful_transition :rejected
   end
 
-  def perform_dismiss(performed_by, _args)
+  def perform_ignore(performed_by, _args)
     DiscourseAkismet.move_to_state(target, 'dismissed')
-    log_confirmation(performed_by, 'dismissed')
+    log_confirmation(performed_by, 'ignored')
 
     successful_transition :ignored
   end
