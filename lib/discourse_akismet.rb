@@ -95,7 +95,7 @@ module DiscourseAkismet
             )
           end
 
-          if defined?(Reviewable)
+          if defined?(ReviewableAkismetPost)
             ReviewableAkismetPost.needs_review!(created_by: spam_reporter, target: post, topic: post.topic)
           end
         else

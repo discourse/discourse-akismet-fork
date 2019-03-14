@@ -58,11 +58,11 @@ class ReviewableAkismetPost < Reviewable
     create_result(:success, to_state)  { |result| result.recalculate_score = true }
   end
 
-  def build_action(actions, id, icon:, bundle: nil, client_action: nil, confirm: false)
+  def build_action(actions, id, icon:, bundle: nil, confirm: false)
     actions.add(id, bundle: bundle) do |action|
       action.icon = icon
       action.label = "js.akismet.#{id}"
-      action.confirm_message = 'js.akismet.delete_prompt' if confirm
+      action.confirm_message = 'js.akismet.reviewable_delete_prompt' if confirm
     end
   end
 
@@ -78,11 +78,9 @@ class ReviewableAkismetPost < Reviewable
   end
 
   def log_confirmation(performed_by, custom_type)
-    topic = target.topic || Topic.with_deleted.find(target.topic_id)
-
     StaffActionLogger.new(performed_by).log_custom(custom_type,
-      post_id: target.id,
-      topic_id: topic.id,
+      post_id: post.id,
+      topic_id: post.topic_id,
       created_at: target.created_at
     )
   end

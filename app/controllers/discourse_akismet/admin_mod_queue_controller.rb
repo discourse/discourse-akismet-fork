@@ -3,6 +3,8 @@ module DiscourseAkismet
     requires_plugin 'discourse-akismet'
 
     def index
+      deprecation_notice
+
       render_json_dump(
         posts: serialize_data(DiscourseAkismet.needs_review, PostSerializer, add_excerpt: true),
         enabled: SiteSetting.akismet_enabled?,
@@ -11,44 +13,62 @@ module DiscourseAkismet
     end
 
     def confirm_spam
-      post = Post.with_deleted.find(params[:post_id])
-      DiscourseAkismet.move_to_state(post, 'confirmed_spam')
-      log_confirmation(post, 'confirmed_spam')
+      deprecation_notice
+
+      if defined?(ReviewableAkismetPost)
+        reviewable.perform(current_user, :confirm_spam)
+      else
+        DiscourseAkismet.move_to_state(post, 'confirmed_spam')
+        log_confirmation(post, 'confirmed_spam')
+      end
+
       render body: nil
     end
 
     def allow
-      post = Post.with_deleted.find(params[:post_id])
+      deprecation_notice
 
-      Jobs.enqueue(:update_akismet_status, post_id: post.id, status: 'ham')
+      if defined?(ReviewableAkismetPost)
+        reviewable.perform(current_user, :not_spam)
+      else
+        Jobs.enqueue(:update_akismet_status, post_id: post.id, status: 'ham')
 
-      # It's possible the post was recovered already
-      if post.deleted_at
-        PostDestroyer.new(current_user, post).recover
+        # It's possible the post was recovered already
+        PostDestroyer.new(current_user, post).recover if post.deleted_at
+
+        DiscourseAkismet.move_to_state(post, 'confirmed_ham')
+        log_confirmation(post, 'confirmed_ham')
       end
-
-      DiscourseAkismet.move_to_state(post, 'confirmed_ham')
-      log_confirmation(post, 'confirmed_ham')
 
       render body: nil
     end
 
     def dismiss
-      post = Post.with_deleted.find(params[:post_id])
-      DiscourseAkismet.move_to_state(post, 'dismissed')
-      log_confirmation(post, 'dismissed')
+      deprecation_notice
+
+      if defined?(ReviewableAkismetPost)
+        reviewable.perform(current_user, :dismiss)
+      else
+        DiscourseAkismet.move_to_state(post, 'dismissed')
+        log_confirmation(post, 'dismissed')
+      end
 
       render body: nil
     end
 
     def delete_user
-      post = Post.with_deleted.find(params[:post_id])
-      user = post.user
-      DiscourseAkismet.move_to_state(post, 'confirmed_spam')
-      log_confirmation(post, 'confirmed_spam_deleted')
+      deprecation_notice
 
-      if guardian.can_delete_user?(user)
-        UserDestroyer.new(current_user).destroy(user, user_deletion_opts)
+      if defined?(ReviewableAkismetPost)
+        reviewable.perform(current_user, :confirm_delete)
+      else
+        user = post.user
+        DiscourseAkismet.move_to_state(post, 'confirmed_spam')
+        log_confirmation(post, 'confirmed_spam_deleted')
+
+        if guardian.can_delete_user?(user)
+          UserDestroyer.new(current_user).destroy(user, user_deletion_opts)
+        end
       end
 
       render body: nil
@@ -77,6 +97,18 @@ module DiscourseAkismet
       end
 
       base
+    end
+
+    def deprecation_notice
+      Discourse.deprecate('Akismet review queue is deprecated. Please use the reviewable API instead.')
+    end
+
+    def reviewable
+      @reviewable ||= ReviewableAkismetPost.where(target_id: params[:post_id], target_type: Post.name)
+    end
+
+    def post
+      @post ||= Post.with_deleted.find(params[:post_id])
     end
   end
 end
