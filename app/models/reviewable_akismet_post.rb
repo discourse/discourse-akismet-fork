@@ -1,9 +1,17 @@
+require_dependency 'reviewable'
+
 class ReviewableAkismetPost < Reviewable
   def build_actions(actions, guardian, _args)
+    return [] unless pending?
+
     build_action(actions, :confirm_spam, icon: 'check')
     build_action(actions, :not_spam, icon: 'thumbs-up')
     build_action(actions, :dismiss, icon: 'times')
-    build_action(actions, :confirm_delete, icon: 'trash-alt') if guardian.is_staff?
+    build_action(actions, :confirm_delete, icon: 'trash-alt', confirm: true) if guardian.is_staff?
+  end
+
+  def post
+    @post ||= (target || Post.with_deleted.find_by(id: target_id))
   end
 
   # Reviewable#perform should be used instead of these action methods.
@@ -52,11 +60,9 @@ class ReviewableAkismetPost < Reviewable
 
   def build_action(actions, id, icon:, bundle: nil, client_action: nil, confirm: false)
     actions.add(id, bundle: bundle) do |action|
-      prefix = "js.akismet.#{id}"
       action.icon = icon
-      action.label = "#{prefix}"
-      action.client_action = client_action
-      action.confirm_message = "#{prefix}.confirm" if confirm
+      action.label = "js.akismet.#{id}"
+      action.confirm_message = 'js.akismet.delete_prompt' if confirm
     end
   end
 

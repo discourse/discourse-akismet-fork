@@ -2,8 +2,20 @@ require 'rails_helper'
 
 describe ReviewableAkismetPost do
   let(:guardian) { Guardian.new }
+  let(:reviewable) { ReviewableAkismetPost.new }
 
   describe '#build_actions' do
+    (Reviewable.statuses.keys - [:pending]).each do |status|
+      it 'Does not return available actions when the reviewable is no longer pending' do
+        reviewable.status = Reviewable.statuses[status]
+        an_action_id = :confirm_spam
+
+        actions = reviewable_actions(guardian)
+
+        expect(actions.to_a).to be_empty
+      end
+    end
+
     it 'Adds the confirm spam action' do
       expected_action_id = :confirm_spam
 
@@ -47,7 +59,6 @@ describe ReviewableAkismetPost do
     end
 
     def reviewable_actions(guardian)
-      reviewable = ReviewableAkismetPost.new
       actions = Reviewable::Actions.new(reviewable, guardian, {})
       reviewable.build_actions(actions, guardian, {})
 
