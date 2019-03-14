@@ -18,7 +18,6 @@ class ReviewableAkismetPost < Reviewable
   # These are only part of the public API because #perform needs them to be public.
 
   def perform_confirm_spam(performed_by, _args)
-    DiscourseAkismet.move_to_state(target, 'confirmed_spam')
     log_confirmation(performed_by, 'confirmed_spam')
 
     successful_transition :approved
@@ -26,7 +25,6 @@ class ReviewableAkismetPost < Reviewable
 
   def perform_not_spam(performed_by, _args)
     Jobs.enqueue(:update_akismet_status, post_id: target_id, status: 'ham')
-    DiscourseAkismet.move_to_state(target, 'confirmed_ham')
     log_confirmation(performed_by, 'confirmed_ham')
 
     PostDestroyer.new(performed_by, target).recover if target.deleted_at
@@ -35,14 +33,12 @@ class ReviewableAkismetPost < Reviewable
   end
 
   def perform_ignore(performed_by, _args)
-    DiscourseAkismet.move_to_state(target, 'dismissed')
     log_confirmation(performed_by, 'ignored')
 
     successful_transition :ignored
   end
 
   def perform_confirm_delete(performed_by, _args)
-    DiscourseAkismet.move_to_state(target, 'confirmed_spam')
     log_confirmation(performed_by, 'confirmed_spam_deleted')
 
     if Guardian.new(performed_by).can_delete_user?(target.user)

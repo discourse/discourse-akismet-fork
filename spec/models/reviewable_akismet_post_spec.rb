@@ -85,8 +85,6 @@ describe ReviewableAkismetPost do
       it_behaves_like 'It logs actions in the staff actions logger'
 
       it 'Confirms spam and reviewable status is changed to approved' do
-        DiscourseAkismet.expects(:move_to_state).with(post, 'confirmed_spam')
-
         result = reviewable.perform admin, action
 
         expect(result.transition_to).to eq :approved
@@ -100,8 +98,6 @@ describe ReviewableAkismetPost do
       it_behaves_like 'It logs actions in the staff actions logger'
 
       it 'Set post as clear and reviewable status is changed to rejected' do
-        DiscourseAkismet.expects(:move_to_state).with(post, 'confirmed_ham')
-
         result = reviewable.perform admin, action
 
         expect(result.transition_to).to eq :rejected
@@ -143,8 +139,6 @@ describe ReviewableAkismetPost do
       it_behaves_like 'It logs actions in the staff actions logger'
 
       it 'Set post as dismissed and reviewable status is changed to ignored' do
-        DiscourseAkismet.expects(:move_to_state).with(post, 'dismissed')
-
         result = reviewable.perform admin, action
 
         expect(result.transition_to).to eq :ignored
@@ -158,8 +152,6 @@ describe ReviewableAkismetPost do
       it_behaves_like 'It logs actions in the staff actions logger'
 
       it 'Confirms spam and reviewable status is changed to deleted' do
-        DiscourseAkismet.expects(:move_to_state).with(post, 'confirmed_spam')
-
         result = reviewable.perform admin, action
 
         expect(result.transition_to).to eq :deleted
