@@ -60,8 +60,27 @@ describe ReviewableAkismetPost do
     let(:admin) { Fabricate(:admin) }
     let(:reviewable) { described_class.needs_review!(target: post, created_by: admin) }
 
+    shared_examples 'It logs actions in the staff actions logger' do
+      it 'Creates a UserHistory that reflects the action taken' do
+        reviewable.perform admin, action
+
+        admin_last_action = UserHistory.find_by(post: post)
+
+        assert_history_reflects_action(admin_last_action, admin, post, action_name)
+      end
+
+      def assert_history_reflects_action(action, admin, post, action_name)
+        expect(action.custom_type).to eq action_name
+        expect(action.post_id).to eq post.id
+        expect(action.topic_id).to eq post.topic_id
+      end
+    end
+
     describe '#perform_confirm_spam' do
       let(:action) { :confirm_spam }
+      let(:action_name) { 'confirmed_spam' }
+
+      it_behaves_like 'It logs actions in the staff actions logger'
 
       it 'Confirms spam and reviewable status is changed to approved' do
         DiscourseAkismet.expects(:move_to_state).with(post, 'confirmed_spam')
@@ -74,6 +93,9 @@ describe ReviewableAkismetPost do
 
     describe '#perform_not_spam' do
       let(:action) { :not_spam }
+      let(:action_name) { 'confirmed_ham' }
+
+      it_behaves_like 'It logs actions in the staff actions logger'
 
       it 'Set post as clear and reviewable status is changed to rejected' do
         DiscourseAkismet.expects(:move_to_state).with(post, 'confirmed_ham')
@@ -114,6 +136,9 @@ describe ReviewableAkismetPost do
 
     describe '#perform_dismiss' do
       let(:action) { :dismiss }
+      let(:action_name) { 'dismissed' }
+
+      it_behaves_like 'It logs actions in the staff actions logger'
 
       it 'Set post as dismissed and reviewable status is changed to ignored' do
         DiscourseAkismet.expects(:move_to_state).with(post, 'dismissed')
@@ -126,6 +151,9 @@ describe ReviewableAkismetPost do
 
     describe '#perform_confirm_delete' do
       let(:action) { :confirm_delete }
+      let(:action_name) { 'confirmed_spam_deleted' }
+
+      it_behaves_like 'It logs actions in the staff actions logger'
 
       it 'Confirms spam and reviewable status is changed to deleted' do
         DiscourseAkismet.expects(:move_to_state).with(post, 'confirmed_spam')

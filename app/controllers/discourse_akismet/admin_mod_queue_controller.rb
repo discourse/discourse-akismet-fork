@@ -63,9 +63,6 @@ module DiscourseAkismet
         post_id: post.id,
         topic_id: topic.id,
         created_at: post.created_at,
-        topic: topic.title,
-        post_number: post.post_number,
-        raw: post.raw
       )
     end
 

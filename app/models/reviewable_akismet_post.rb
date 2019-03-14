@@ -11,6 +11,7 @@ class ReviewableAkismetPost < Reviewable
 
   def perform_confirm_spam(performed_by, _args)
     DiscourseAkismet.move_to_state(target, 'confirmed_spam')
+    log_confirmation(performed_by, 'confirmed_spam')
 
     successful_transition :approved
   end
@@ -18,6 +19,7 @@ class ReviewableAkismetPost < Reviewable
   def perform_not_spam(performed_by, _args)
     Jobs.enqueue(:update_akismet_status, post_id: target_id, status: 'ham')
     DiscourseAkismet.move_to_state(target, 'confirmed_ham')
+    log_confirmation(performed_by, 'confirmed_ham')
 
     PostDestroyer.new(performed_by, target).recover if target.deleted_at
 
@@ -26,12 +28,14 @@ class ReviewableAkismetPost < Reviewable
 
   def perform_dismiss(performed_by, _args)
     DiscourseAkismet.move_to_state(target, 'dismissed')
+    log_confirmation(performed_by, 'dismissed')
 
     successful_transition :ignored
   end
 
   def perform_confirm_delete(performed_by, _args)
     DiscourseAkismet.move_to_state(target, 'confirmed_spam')
+    log_confirmation(performed_by, 'confirmed_spam_deleted')
 
     if Guardian.new(performed_by).can_delete_user?(target.user)
       UserDestroyer.new(performed_by).destroy(target.user, user_deletion_opts(performed_by))
@@ -65,5 +69,15 @@ class ReviewableAkismetPost < Reviewable
     base.tap do |b|
       b.merge!(block_email: true, block_ip: true) if Rails.env.production?
     end
+  end
+
+  def log_confirmation(performed_by, custom_type)
+    topic = target.topic || Topic.with_deleted.find(target.topic_id)
+
+    StaffActionLogger.new(performed_by).log_custom(custom_type,
+      post_id: target.id,
+      topic_id: topic.id,
+      created_at: target.created_at
+    )
   end
 end
