@@ -12,6 +12,8 @@ describe DiscourseAkismet::CheckSpamUser do
 
   let(:bio) { 'random profile' }
 
+  let(:akismet_url_regex) { /rest.akismet.com/ }
+
   it 'checks job is enqueued on user create' do
     user
     jobs = Jobs::CheckAkismetUser.jobs.select do |job|
@@ -22,49 +24,24 @@ describe DiscourseAkismet::CheckSpamUser do
     expect(jobs.count).to eq(1)
   end
 
-  describe '#args' do
+  describe '#check_for_spam' do
 
-    it 'should return args for a user' do
-      result = described_class.new(user, user.user_profile.bio_raw).send(:args)
+    it 'moves spam user to NEEDS_REVIEW' do
+      stub_request(:post, akismet_url_regex).
+        to_return(status: 200, body: "true", headers: {})
 
-      expect(result[:comment_content]).to eq(bio)
-      expect(result[:comment_author]).to eq(user.username)
-      expect(result[:permalink]).to eq("#{Discourse.base_url}/u/#{user.username}")
-      expect(result[:content_type]).to eq('user-tl0')
-      expect(result[:comment_author_email]).to eq(user.email)
+      described_class.new(user, user.user_profile.bio_raw).check_for_spam
+
+      expect(UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY, user_id: user.id).first.value).to eq(DiscourseAkismet::NEEDS_REVIEW)
     end
 
-    it 'should return nil in email when akismet akismet_transmit_email is false' do
-      SiteSetting.akismet_transmit_email = false
+    it 'moves valid user to CHECKED' do
+      stub_request(:post, akismet_url_regex).
+        to_return(status: 200, body: "false", headers: {})
 
-      result = described_class.new(user, user.user_profile.bio_raw).send(:args)
+      described_class.new(user, user.user_profile.bio_raw).check_for_spam
 
-      expect(result[:comment_author_email]).to be_nil
-    end
-
-  end
-
-  describe '#move_to_state' do
-
-    it 'moves user to new state' do
-      described_class.new(user, user.user_profile.bio_raw).move_to_state(DiscourseAkismet::NEEDS_REVIEW)
-
-      akismet_state = UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY)
-
-      expect(akismet_state.count).to eq(1)
-      expect(akismet_state.last.value).to eq(DiscourseAkismet::NEEDS_REVIEW)
-    end
-
-    it 'does not move user to new state if setting is disabled or user is nil' do
-      SiteSetting.akismet_enabled = false
-      described_class.new(user, user.user_profile.bio_raw).move_to_state(DiscourseAkismet::NEEDS_REVIEW)
-
-      akismet_state = UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY, user_id: user.id)
-      expect(akismet_state.count).to eq(0)
-
-      SiteSetting.akismet_enabled = true
-      described_class.new(nil, user.user_profile.bio_raw).move_to_state(DiscourseAkismet::NEEDS_REVIEW)
-      expect(akismet_state.reload.count).to eq(0)
+      expect(UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY, user_id: user.id).first.value).to eq(DiscourseAkismet::CHECKED)
     end
 
   end

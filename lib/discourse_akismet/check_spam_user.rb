@@ -24,14 +24,7 @@ module DiscourseAkismet
       true
     end
 
-    def move_to_state(state)
-      return unless should_check_for_spam?
-
-      @user.upsert_custom_fields(DiscourseAkismet::AKISMET_STATE_KEY => state)
-    end
-
     def self.to_check
-      # User.joins(:user_custom_fields).where(trust_level: 0).where('user_custom_fields.name != ?', DiscourseAkismet::AKISMET_STATE_KEY)
       User.where(trust_level: 0).where.not(id: UserCustomField.where(name: DiscourseAkismet::AKISMET_STATE_KEY).select(:user_id))
     end
 
@@ -55,6 +48,12 @@ module DiscourseAkismet
       end
 
       extra_args
+    end
+
+    def move_to_state(state)
+      return unless should_check_for_spam?
+
+      @user.upsert_custom_fields(DiscourseAkismet::AKISMET_STATE_KEY => state)
     end
 
   end
