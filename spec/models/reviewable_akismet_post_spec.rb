@@ -1,21 +1,21 @@
 require 'rails_helper'
 
-describe ReviewableAkismetPost do
+describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
   let(:guardian) { Guardian.new }
   let(:reviewable) { ReviewableAkismetPost.new }
 
   describe '#build_actions' do
-    (Reviewable.statuses.keys - [:pending]).each do |status|
-      it 'Does not return available actions when the reviewable is no longer pending' do
+    it 'Does not return available actions when the reviewable is no longer pending' do
+      available_actions = (Reviewable.statuses.keys - [:pending]).reduce([]) do |actions, status|
         reviewable.status = Reviewable.statuses[status]
         an_action_id = :confirm_spam
 
-        actions = reviewable_actions(guardian)
-
-        expect(actions.to_a).to be_empty
+        actions.concat reviewable_actions(guardian).to_a
       end
-    end
 
+      expect(available_actions).to be_empty
+    end
+    
     it 'Adds the confirm spam action' do
       actions = reviewable_actions(guardian)
 
@@ -60,7 +60,7 @@ describe ReviewableAkismetPost do
   describe 'Performing actions on reviewable' do
     let(:post) { Fabricate(:post) }
     let(:admin) { Fabricate(:admin) }
-    let(:reviewable) { described_class.needs_review!(target: post, created_by: admin) }
+    let(:reviewable) { ReviewableAkismetPost.needs_review!(target: post, created_by: admin) }
 
     shared_examples 'It logs actions in the staff actions logger' do
       it 'Creates a UserHistory that reflects the action taken' do

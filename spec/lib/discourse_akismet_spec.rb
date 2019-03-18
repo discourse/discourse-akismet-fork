@@ -84,7 +84,7 @@ describe DiscourseAkismet do
     end
   end
 
-  describe '#check_for_spam' do
+  describe '#check_for_spam', if: defined?(Reviewable) do
     it 'Creates a new ReviewableAkismetPost when spam is confirmed by Akismet' do
       post = Fabricate(:post)
       DiscourseAkismet.move_to_state(post, 'new')
