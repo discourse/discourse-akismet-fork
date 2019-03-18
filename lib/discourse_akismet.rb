@@ -96,9 +96,11 @@ module DiscourseAkismet
           end
 
           if defined?(ReviewableAkismetPost)
-            ReviewableAkismetPost.needs_review!(
+            reviewable = ReviewableAkismetPost.needs_review!(
               created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true
             )
+
+            reviewable.add_score(spam_reporter, PostActionType.types[:spam], created_at: reviewable.created_at)
           end
         else
           DiscourseAkismet.move_to_state(post, 'checked')

@@ -20,7 +20,7 @@ class ReviewableAkismetPost < Reviewable
   def perform_confirm_spam(performed_by, _args)
     log_confirmation(performed_by, 'confirmed_spam')
 
-    successful_transition :approved
+    successful_transition :approved, :agreed
   end
 
   def perform_not_spam(performed_by, _args)
@@ -29,13 +29,13 @@ class ReviewableAkismetPost < Reviewable
 
     PostDestroyer.new(performed_by, target).recover if target.deleted_at
 
-    successful_transition :rejected
+    successful_transition :rejected, :disagreed
   end
 
   def perform_ignore(performed_by, _args)
     log_confirmation(performed_by, 'ignored')
 
-    successful_transition :ignored
+    successful_transition :ignored, :ignored
   end
 
   def perform_confirm_delete(performed_by, _args)
@@ -45,13 +45,16 @@ class ReviewableAkismetPost < Reviewable
       UserDestroyer.new(performed_by).destroy(target.user, user_deletion_opts(performed_by))
     end
 
-    successful_transition :deleted
+    successful_transition :deleted, :agreed
   end
 
   private
 
-  def successful_transition(to_state)
-    create_result(:success, to_state)  { |result| result.recalculate_score = true }
+  def successful_transition(to_state, update_flag_status)
+    create_result(:success, to_state)  do |result|
+      result.recalculate_score = true
+      result.update_flag_stats = { status: update_flag_status, user_ids: [created_by_id] }
+    end
   end
 
   def build_action(actions, id, icon:, bundle: nil, confirm: false)

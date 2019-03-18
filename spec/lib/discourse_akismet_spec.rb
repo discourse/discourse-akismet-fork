@@ -99,6 +99,20 @@ describe DiscourseAkismet do
       expect(reviewable_akismet_post.reviewable_by_moderator).to eq true
     end
 
+    it 'Creates a new score for the new reviewable' do
+      post = Fabricate(:post)
+      DiscourseAkismet.move_to_state(post, 'new')
+
+      stub_spam_confirmation
+
+      DiscourseAkismet.check_for_spam(post)
+      reviewable_akismet_score = ReviewableScore.last
+
+      expect(reviewable_akismet_score.user).to eq Discourse.system_user
+      expect(reviewable_akismet_score.reviewable_score_type).to eq PostActionType.types[:spam]
+      expect(reviewable_akismet_score.take_action_bonus).to be_zero
+    end
+
     def stub_spam_confirmation
       stub_request(:post, /rest.akismet.com/).to_return(body: 'true')
     end

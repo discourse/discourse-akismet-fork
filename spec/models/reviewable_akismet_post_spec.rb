@@ -15,7 +15,7 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
 
       expect(available_actions).to be_empty
     end
-    
+
     it 'Adds the confirm spam action' do
       actions = reviewable_actions(guardian)
 
@@ -76,11 +76,21 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
         expect(action.post_id).to eq post.id
         expect(action.topic_id).to eq post.topic_id
       end
+
+      it 'Returns necessary information to update reviewable creator user stats' do
+        result = reviewable.perform admin, action
+
+        update_flag_stats = result.update_flag_stats
+
+        expect(update_flag_stats[:status]).to eq flag_stat_status
+        expect(update_flag_stats[:user_ids]).to match_array [reviewable.created_by_id]
+      end
     end
 
     describe '#perform_confirm_spam' do
       let(:action) { :confirm_spam }
       let(:action_name) { 'confirmed_spam' }
+      let(:flag_stat_status) { :agreed }
 
       it_behaves_like 'It logs actions in the staff actions logger'
 
@@ -94,6 +104,7 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
     describe '#perform_not_spam' do
       let(:action) { :not_spam }
       let(:action_name) { 'confirmed_ham' }
+      let(:flag_stat_status) { :disagreed }
 
       it_behaves_like 'It logs actions in the staff actions logger'
 
@@ -135,6 +146,7 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
     describe '#perform_ignore' do
       let(:action) { :ignore }
       let(:action_name) { 'ignored' }
+      let(:flag_stat_status) { :ignored }
 
       it_behaves_like 'It logs actions in the staff actions logger'
 
@@ -148,6 +160,7 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
     describe '#perform_confirm_delete' do
       let(:action) { :confirm_delete }
       let(:action_name) { 'confirmed_spam_deleted' }
+      let(:flag_stat_status) { :agreed }
 
       it_behaves_like 'It logs actions in the staff actions logger'
 
