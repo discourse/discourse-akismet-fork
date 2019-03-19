@@ -45,14 +45,14 @@ class ReviewableAkismetPost < Reviewable
       UserDestroyer.new(performed_by).destroy(target.user, user_deletion_opts(performed_by))
     end
 
-    successful_transition :deleted, :agreed
+    successful_transition :deleted, :agreed, recalculate_score: false
   end
 
   private
 
-  def successful_transition(to_state, update_flag_status)
+  def successful_transition(to_state, update_flag_status, recalculate_score: true)
     create_result(:success, to_state)  do |result|
-      result.recalculate_score = true
+      result.recalculate_score = recalculate_score
       result.update_flag_stats = { status: update_flag_status, user_ids: [created_by_id] }
     end
   end

@@ -13,7 +13,7 @@ module DiscourseAkismet
     end
 
     def confirm_spam
-      if defined?(ReviewableAkismetPost)
+      if should_use_reviewable_api?
         reviewable.perform(current_user, :confirm_spam)
       else
         DiscourseAkismet.move_to_state(post, 'confirmed_spam')
@@ -24,7 +24,7 @@ module DiscourseAkismet
     end
 
     def allow
-      if defined?(ReviewableAkismetPost)
+      if should_use_reviewable_api?
         reviewable.perform(current_user, :not_spam)
       else
         Jobs.enqueue(:update_akismet_status, post_id: post.id, status: 'ham')
@@ -40,7 +40,7 @@ module DiscourseAkismet
     end
 
     def dismiss
-      if defined?(ReviewableAkismetPost)
+      if should_use_reviewable_api?
         reviewable.perform(current_user, :ignore)
       else
         DiscourseAkismet.move_to_state(post, 'dismissed')
@@ -51,7 +51,7 @@ module DiscourseAkismet
     end
 
     def delete_user
-      if defined?(ReviewableAkismetPost)
+      if should_use_reviewable_api?
         reviewable.perform(current_user, :confirm_delete)
       else
         user = post.user
@@ -67,6 +67,10 @@ module DiscourseAkismet
     end
 
     private
+
+    def should_use_reviewable_api?
+      defined?(ReviewableAkismetPost) && reviewable
+    end
 
     def log_confirmation(post, custom_type)
       topic = post.topic || Topic.with_deleted.find(post.topic_id)
