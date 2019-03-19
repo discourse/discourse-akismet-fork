@@ -96,7 +96,7 @@ module DiscourseAkismet
     end
 
     def reviewable
-      @reviewable ||= ReviewableAkismetPost.where(target_id: params[:post_id], target_type: Post.name)
+      @reviewable ||= ReviewableAkismetPost.find_by(target_id: params[:post_id], target_type: Post.name)
     end
 
     def post
