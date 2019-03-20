@@ -1,4 +1,5 @@
 require 'rails_helper'
+require_relative '../fabricators/reviewable_akismet_post_fabricator.rb'
 
 describe DiscourseAkismet do
   before do
@@ -6,9 +7,9 @@ describe DiscourseAkismet do
     SiteSetting.akismet_enabled = true
   end
 
-  describe '#args_for_post' do
-    let(:post) { Fabricate(:post) }
+  let(:post) { Fabricate(:post) }
 
+  describe '#args_for_post' do
     before do
       post.upsert_custom_fields(
         'AKISMET_REFERRER' => 'https://discourse.org',
@@ -61,8 +62,6 @@ describe DiscourseAkismet do
   end
 
   describe "custom fields" do
-    let(:post) { Fabricate(:post) }
-
     before do
       DiscourseAkismet.move_to_state(
         post,
@@ -86,7 +85,6 @@ describe DiscourseAkismet do
 
   describe '#check_for_spam', if: defined?(Reviewable) do
     it 'Creates a new ReviewableAkismetPost when spam is confirmed by Akismet' do
-      post = Fabricate(:post)
       DiscourseAkismet.move_to_state(post, 'new')
 
       stub_spam_confirmation
@@ -100,7 +98,6 @@ describe DiscourseAkismet do
     end
 
     it 'Creates a new score for the new reviewable' do
-      post = Fabricate(:post)
       DiscourseAkismet.move_to_state(post, 'new')
 
       stub_spam_confirmation
@@ -115,6 +112,32 @@ describe DiscourseAkismet do
 
     def stub_spam_confirmation
       stub_request(:post, /rest.akismet.com/).to_return(body: 'true')
+    end
+  end
+
+  describe "#needs_review" do
+    it 'Retrieves a post that needs review' do
+      described_class.move_to_state(post, 'needs_review')
+
+      expect(described_class.needs_review).not_to be_empty
+    end
+
+    describe 'When the reviewable API is present', if: defined?(Reviewable) do
+      it 'Does not retrieve posts that were reviewed through the new API' do
+        described_class.move_to_state(post, 'needs_review')
+
+        Fabricate(:reviewable_akismet_post, target: post, status: Reviewable.statuses[:approved])
+
+        expect(described_class.needs_review).to be_empty
+      end
+
+      it 'Retrieves posts that were not reviewed through the new API yet' do
+        described_class.move_to_state(post, 'needs_review')
+
+        Fabricate(:reviewable_akismet_post, target: post, status: Reviewable.statuses[:pending])
+
+        expect(described_class.needs_review).not_to be_empty
+      end
     end
   end
 end

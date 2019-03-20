@@ -125,6 +125,14 @@ module DiscourseAkismet
 
   def self.needs_review
     post_ids = PostCustomField.where(name: 'AKISMET_STATE', value: 'needs_review').pluck(:post_id)
+
+    if defined?(Reviewable)
+      pending = Reviewable.statuses[:pending]
+      reviewable_ids = ReviewableAkismetPost.where(target_type: Post.name, target_id: post_ids)
+        .where.not(status: pending).pluck(:target_id)
+    end
+
+    post_ids = post_ids - reviewable_ids if reviewable_ids
     Post.with_deleted.where(id: post_ids).includes(:topic, :user).references(:topic)
   end
 
