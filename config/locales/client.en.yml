@@ -33,3 +33,7 @@ en:
 
       reviewer: "Akismet"
       reviewer_description: "Automatically flagged by system"
+    review:
+      types:
+        reviewable_akismet_post:
+          title: "Spam Flagged Post"
