@@ -6,27 +6,37 @@
 
 enabled_site_setting :akismet_enabled
 
-# load the engine
 load File.expand_path('../lib/discourse_akismet.rb', __FILE__)
 load File.expand_path('../lib/akismet.rb', __FILE__)
-load File.expand_path('../lib/discourse_akismet/engine.rb', __FILE__)
 
-register_asset "stylesheets/mod-queue-styles.scss"
-register_asset "stylesheets/reviewable-akismet-post-styles.scss"
+# Classes are not loaded at this point so we check for the file
+reviewable_api_enabled = File.exist? File.expand_path('../../../app/models/reviewable.rb', __FILE__)
+
+# We still want to run tests associated to the engine ;)
+if reviewable_api_enabled && !Rails.env.test?
+  register_asset "stylesheets/reviewable-akismet-post-styles.scss"
+else
+  load File.expand_path('../lib/discourse_akismet/engine.rb', __FILE__)
+  register_asset "stylesheets/mod-queue-styles.scss"
+
+  add_admin_route 'akismet.title', 'akismet'
+  Discourse::Application.routes.append do
+    mount ::DiscourseAkismet::Engine, at: '/admin/plugins/akismet'
+  end
+end
 
 after_initialize do
   require_dependency File.expand_path('../jobs/check_for_spam_posts.rb', __FILE__)
   require_dependency File.expand_path('../jobs/check_akismet_post.rb', __FILE__)
   require_dependency File.expand_path('../jobs/update_akismet_status.rb', __FILE__)
 
-  begin
-    'Reviewable'.constantize
+  if reviewable_api_enabled
     require_dependency File.expand_path('../models/reviewable_akismet_post.rb', __FILE__)
     require_dependency File.expand_path('../serializers/reviewable_akismet_post_serializer.rb', __FILE__)
-    
     register_reviewable_type ReviewableAkismetPost
-  rescue NameError
   end
+
+  add_to_serializer(:site, :reviewable_api_enabled) { reviewable_api_enabled }
 
   # Store extra data for akismet
   on(:post_created) do |post, params|
@@ -78,11 +88,4 @@ after_initialize do
   add_to_serializer(:current_user, :akismet_review_count) do
     scope.can_review_akismet? ? DiscourseAkismet.needs_review.count : nil
   end
-end
-
-add_admin_route 'akismet.title', 'akismet'
-
-# And mount the engine
-Discourse::Application.routes.append do
-  mount ::DiscourseAkismet::Engine, at: '/admin/plugins/akismet'
 end
