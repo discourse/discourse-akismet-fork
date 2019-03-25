@@ -2,9 +2,10 @@ require 'rails_helper'
 
 describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
   let(:guardian) { Guardian.new }
-  let(:reviewable) { ReviewableAkismetPost.new }
 
   describe '#build_actions' do
+    let(:reviewable) { ReviewableAkismetPost.new }
+
     it 'Does not return available actions when the reviewable is no longer pending' do
       available_actions = (Reviewable.statuses.keys - [:pending]).reduce([]) do |actions, status|
         reviewable.status = Reviewable.statuses[status]
@@ -58,9 +59,14 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
   end
 
   describe 'Performing actions on reviewable' do
-    let(:post) { Fabricate(:post) }
     let(:admin) { Fabricate(:admin) }
-    let(:reviewable) { ReviewableAkismetPost.needs_review!(target: post, created_by: admin) }
+    let(:post) { Fabricate(:post) }
+    let(:reviewable) { ReviewableAkismetPost.needs_review!(target: post, created_by: admin).reload }
+
+    before do
+      post.trash!(admin)
+      reviewable.reload
+    end
 
     shared_examples 'It logs actions in the staff actions logger' do
       it 'Creates a UserHistory that reflects the action taken' do
@@ -123,17 +129,16 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
       end
 
       it 'Recovers the post' do
-        post.deleted_at = 3.minutes.ago
-        post.deleted_by = admin
-
         reviewable.perform admin, action
 
-        expect(post.deleted_at).to be_nil
-        expect(post.deleted_by).to be_nil
+        recovered_post = post.reload
+
+        expect(recovered_post.deleted_at).to be_nil
+        expect(recovered_post.deleted_by).to be_nil
       end
 
       it 'Does not try to recover the post if it was already recovered' do
-        post.deleted_at = nil
+        post.update(deleted_at: nil)
         event_triggered = false
 
         DiscourseEvent.on(:post_recovered) { event_triggered = true }
@@ -177,7 +182,7 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
       end
 
       it 'Does not delete the user when it cannot be deleted' do
-        post.user = admin
+        post.update(user: admin)
 
         reviewable.perform admin, action
 

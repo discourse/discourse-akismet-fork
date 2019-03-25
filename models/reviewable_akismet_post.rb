@@ -24,10 +24,10 @@ class ReviewableAkismetPost < Reviewable
   end
 
   def perform_not_spam(performed_by, _args)
-    Jobs.enqueue(:update_akismet_status, post_id: target_id, status: 'ham')
+    Jobs.enqueue(:update_akismet_status, post_id: post.id, status: 'ham')
     log_confirmation(performed_by, 'confirmed_ham')
 
-    PostDestroyer.new(performed_by, target).recover if target.deleted_at
+    PostDestroyer.new(performed_by, post).recover if post.deleted_at
 
     successful_transition :rejected, :disagreed
   end
@@ -41,8 +41,8 @@ class ReviewableAkismetPost < Reviewable
   def perform_confirm_delete(performed_by, _args)
     log_confirmation(performed_by, 'confirmed_spam_deleted')
 
-    if Guardian.new(performed_by).can_delete_user?(target.user)
-      UserDestroyer.new(performed_by).destroy(target.user, user_deletion_opts(performed_by))
+    if Guardian.new(performed_by).can_delete_user?(post.user)
+      UserDestroyer.new(performed_by).destroy(post.user, user_deletion_opts(performed_by))
     end
 
     successful_transition :deleted, :agreed, recalculate_score: false
@@ -80,7 +80,7 @@ class ReviewableAkismetPost < Reviewable
     StaffActionLogger.new(performed_by).log_custom(custom_type,
       post_id: post.id,
       topic_id: post.topic_id,
-      created_at: target.created_at
+      created_at: post.created_at
     )
   end
 end
