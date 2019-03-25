@@ -13,20 +13,15 @@
     </span>
   </div>
 
-  {{reviewable-topic-link topic=reviewable.topic}}
+  {{#if reviewable.topic}}
+    {{reviewable-topic-link topic=reviewable.topic}}
+  {{else}}
+    {{i18n "topic.deleted"}}
+  {{/if}}
 
   <div class='post-body'>
-    {{{ reviewable.cooked }}}
+    {{{ reviewable.payload.post_cooked }}}
   </div>
 
-  <table class='reviewable-scores'>
-    <tr>
-      <th class='user'>{{i18n "review.types.reviewable_flagged_post.flagged_by"}}</th>
-      <th>{{i18n "review.scores.description"}}</th>
-    </tr>
-    <tr class='reviewable-score'>
-        <td class='user'>{{i18n "akismet.reviewer"}}</td>
-        <td>{{i18n "akismet.reviewer_description"}}</td>
-    </tr>
-  </table>
+  {{yield}}
 </div>

@@ -77,8 +77,7 @@ module DiscourseAkismet
 
       StaffActionLogger.new(current_user).log_custom(custom_type,
         post_id: post.id,
-        topic_id: topic.id,
-        created_at: post.created_at,
+        topic_id: topic.id
       )
     end
 

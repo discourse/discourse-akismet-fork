@@ -95,6 +95,7 @@ describe DiscourseAkismet do
       expect(reviewable_akismet_post.status).to eq Reviewable.statuses[:pending]
       expect(reviewable_akismet_post.post).to eq post
       expect(reviewable_akismet_post.reviewable_by_moderator).to eq true
+      expect(reviewable_akismet_post.payload['post_cooked']).to eq post.cooked
     end
 
     it 'Creates a new score for the new reviewable' do

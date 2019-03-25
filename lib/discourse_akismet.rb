@@ -90,14 +90,14 @@ module DiscourseAkismet
           # Send a message to the user explaining that it happened
           if SiteSetting.akismet_notify_user?
             SystemMessage.new(post.user).create(
-              'akismet_spam',
-              topic_title: post.topic.title
+              'akismet_spam', topic_title: post.topic.title
             )
           end
 
           if defined?(ReviewableAkismetPost)
             reviewable = ReviewableAkismetPost.needs_review!(
-              created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true
+              created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true,
+              payload: { post_cooked: post.cooked }
             )
 
             reviewable.add_score(spam_reporter, PostActionType.types[:spam], created_at: reviewable.created_at)

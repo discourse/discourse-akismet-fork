@@ -31,9 +31,9 @@ en:
       not_enabled: "Akismet is not enabled right now."
       change_settings: "Change Settings"
 
-      reviewer: "Akismet"
-      reviewer_description: "Automatically flagged by system"
+    topic:
+      deleted: "[Topic Deleted]"
     review:
       types:
         reviewable_akismet_post:
-          title: "Spam Flagged Post"
+          title: "Akismet Flagged Post"

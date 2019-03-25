@@ -65,7 +65,6 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
 
     before do
       post.trash!(admin)
-      reviewable.reload
     end
 
     shared_examples 'It logs actions in the staff actions logger' do
