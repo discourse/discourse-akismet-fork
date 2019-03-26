@@ -3,6 +3,7 @@ task 'reviewables:migrate_akismet_reviews' => :environment do
   reporter = Discourse.system_user
 
   migrate_reviewables
+  migrate_scores
   migrate_creation_history
   migrate_resolution_history
 end
@@ -52,6 +53,55 @@ def migrate_reviewables
     WHERE
       pcf.name = 'AKISMET_STATE' AND
       pcf.value IN ('dismissed', 'needs_review', 'confirmed_spam', 'confirmed_ham')
+  SQL
+end
+
+def migrate_scores
+  DB.exec <<~SQL
+    INSERT INTO reviewable_scores (
+      reviewable_id,
+      user_id,
+      reviewable_score_type,
+      status,
+      score,
+      take_action_bonus,
+      meta_topic_id,
+      created_at,
+      updated_at,
+      reviewed_by_id,
+      reviewed_at
+    )
+    SELECT
+      r.id,
+      r.created_by_id,
+      #{PostActionType.types[:spam]},
+      CASE
+        WHEN r.status = 1 OR r.status = 4 THEN 1
+        ELSE r.status
+      END,
+      1.0 +
+      CASE
+        WHEN u.admin = TRUE OR u.moderator = TRUE THEN 5.0
+        ELSE u.trust_level
+      END +
+      CASE
+        WHEN (us.flags_agreed + us.flags_disagreed + us.flags_ignored) > 5
+        THEN (us.flags_agreed / (us.flags_agreed + us.flags_disagreed + us.flags_ignored)) * 5
+        ELSE 0.0
+      END +
+      CASE WHEN r.status <> 0 THEN 5.0 ELSE 0.0 END,
+      CASE WHEN r.status <> 0 THEN 5.0 ELSE 0.0 END,
+      r.topic_id,
+      r.created_at,
+      r.created_at,
+      uh.acting_user_id,
+      uh.created_at
+    FROM reviewables AS r
+    INNER JOIN users AS u ON r.created_by_id = u.id
+    LEFT JOIN user_stats AS us ON  us.user_id = u.id
+    LEFT JOIN user_histories AS uh ON uh.post_id = r.target_id AND
+      uh.custom_type IN ('confirmed_spam', 'confirmed_ham', 'dismissed', 'confirmed_spam_deleted')
+    WHERE r.type = 'ReviewableAkismetPost'
   SQL
 end
 

@@ -100,7 +100,10 @@ module DiscourseAkismet
               created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true
             )
 
-            reviewable.add_score(spam_reporter, PostActionType.types[:spam], created_at: reviewable.created_at)
+            reviewable.add_score(
+              spam_reporter, PostActionType.types[:spam],
+              created_at: reviewable.created_at, meta_topic_id: post.topic_id
+            )
           end
         else
           DiscourseAkismet.move_to_state(post, 'checked')
