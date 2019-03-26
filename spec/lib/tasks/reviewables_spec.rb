@@ -68,6 +68,7 @@ describe 'Reviewables rake tasks', if: defined?(Reviewable) do
       expect(reviewable.target_id).to eq post.id
       expect(reviewable.topic_id).to eq post.topic_id
       expect(reviewable.reviewable_by_moderator).to eq true
+      expect(reviewable.payload['post_cooked']).to eq post.cooked
     end
 
     def reviewable_status_for(state)

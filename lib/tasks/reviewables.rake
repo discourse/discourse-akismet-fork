@@ -36,7 +36,7 @@ def migrate_reviewables
       END,
       #{reporter.id},
       TRUE,
-      json_build_object(),
+      json_build_object('post_cooked', p.cooked),
       t.category_id,
       p.topic_id,
       TRUE,
