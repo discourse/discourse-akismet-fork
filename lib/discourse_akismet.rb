@@ -102,7 +102,7 @@ module DiscourseAkismet
 
             reviewable.add_score(
               spam_reporter, PostActionType.types[:spam],
-              created_at: reviewable.created_at, meta_topic_id: post.topic_id
+              created_at: reviewable.created_at
             )
           end
         else

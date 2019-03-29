@@ -65,7 +65,6 @@ def migrate_scores
       status,
       score,
       take_action_bonus,
-      meta_topic_id,
       created_at,
       updated_at,
       reviewed_by_id,
@@ -91,7 +90,6 @@ def migrate_scores
       END +
       CASE WHEN r.status <> 0 THEN 5.0 ELSE 0.0 END,
       CASE WHEN r.status <> 0 THEN 5.0 ELSE 0.0 END,
-      r.topic_id,
       r.created_at,
       r.created_at,
       uh.acting_user_id,

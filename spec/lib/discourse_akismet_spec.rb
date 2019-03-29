@@ -109,7 +109,6 @@ describe DiscourseAkismet do
       expect(reviewable_akismet_score.user).to eq Discourse.system_user
       expect(reviewable_akismet_score.reviewable_score_type).to eq PostActionType.types[:spam]
       expect(reviewable_akismet_score.take_action_bonus).to be_zero
-      expect(reviewable_akismet_score.meta_topic_id).to eq post.topic_id
     end
 
     def stub_spam_confirmation

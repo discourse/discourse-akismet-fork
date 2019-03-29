@@ -110,7 +110,6 @@ describe 'Reviewables rake tasks', if: defined?(Reviewable) do
         expect(score.user).to eq reviewable.created_by
         expect(score.status).to eq score_status_for(action)
         expect(score.reviewable_score_type).to eq spam_type
-        expect(score.meta_topic_id).to eq reviewable.topic_id
         expect(score.created_at).to eq reviewable.created_at
       end
 
