@@ -4,12 +4,12 @@ en:
       logs:
         staff_actions:
           actions:
-            confirmed_ham: "confirmed not spam"
-            confirmed_spam: "confirmed spam"
-            confirmed_spam_deleted: "confirmed spam and deleted user"
-            dismissed: 'dismissed spam'
-            ignore: 'ignore spam'
-
+            confirmed_ham: "Not spam"
+            confirmed_spam: "Confirm spam"
+            confirmed_spam_deleted: "Confirm spam and delete user"
+            dismissed: 'Dismiss spam'
+            ignored: 'Ignore spam'
+            
     akismet:
       title: "Akismet"
       confirm_spam: "Confirm Spam"
@@ -37,3 +37,4 @@ en:
       types:
         reviewable_akismet_post:
           title: "Akismet Flagged Post"
+

@@ -44,7 +44,7 @@ module DiscourseAkismet
         reviewable.perform(current_user, :ignore)
       else
         DiscourseAkismet.move_to_state(post, 'dismissed')
-        log_confirmation(post, 'dismissed')
+        log_confirmation(post, 'ignored')
       end
 
       render body: nil

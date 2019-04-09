@@ -30,13 +30,21 @@ after_initialize do
   require_dependency File.expand_path('../jobs/check_akismet_post.rb', __FILE__)
   require_dependency File.expand_path('../jobs/update_akismet_status.rb', __FILE__)
 
+  add_to_serializer(:site, :reviewable_api_enabled) { reviewable_api_enabled }
+
   if reviewable_api_enabled
     require_dependency File.expand_path('../models/reviewable_akismet_post.rb', __FILE__)
     require_dependency File.expand_path('../serializers/reviewable_akismet_post_serializer.rb', __FILE__)
     register_reviewable_type ReviewableAkismetPost
-  end
+  else
+    add_to_class(:guardian, :can_review_akismet?) do
+      user.try(:staff?)
+    end
 
-  add_to_serializer(:site, :reviewable_api_enabled) { reviewable_api_enabled }
+    add_to_serializer(:current_user, :akismet_review_count) do
+      scope.can_review_akismet? ? DiscourseAkismet.needs_review.count : nil
+    end
+  end
 
   # Store extra data for akismet
   on(:post_created) do |post, params|
@@ -81,11 +89,6 @@ after_initialize do
     end
   end
 
-  add_to_class(:guardian, :can_review_akismet?) do
-    user.try(:staff?)
-  end
-
-  add_to_serializer(:current_user, :akismet_review_count) do
-    scope.can_review_akismet? ? DiscourseAkismet.needs_review.count : nil
-  end
+  staff_actions = %i[confirmed_spam confirmed_ham ignored confirmed_spam_deleted]
+  extend_list_method(UserHistory, :staff_actions, staff_actions)
 end
