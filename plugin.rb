@@ -90,8 +90,9 @@ after_initialize do
     end
   end
 
-  if reviewable_api_enabled
-    staff_actions = %i[confirmed_spam confirmed_ham ignored confirmed_spam_deleted]
-    extend_list_method(UserHistory, :staff_actions, staff_actions)
-  end
+  # TODO: Re-enable when .beta9 comes out
+  # if reviewable_api_enabled
+  #   staff_actions = %i[confirmed_spam confirmed_ham ignored confirmed_spam_deleted]
+  #   extend_list_method(UserHistory, :staff_actions, staff_actions)
+  # end
 end
