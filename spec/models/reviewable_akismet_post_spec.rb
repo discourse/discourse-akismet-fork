@@ -122,11 +122,9 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
       end
 
       it 'Sends feedback to Akismet since post was not spam' do
-        Jobs.stubs(:enqueue).with(Not(equals(:update_akismet_status)), anything)
-
-        Jobs.expects(:enqueue).with(:update_akismet_status, post_id: post.id, status: 'ham')
-
-        reviewable.perform admin, action
+        expect {
+          reviewable.perform admin, action
+        }.to change(Jobs::UpdateAkismetStatus.jobs, :size).by(1)
       end
 
       it 'Recovers the post' do

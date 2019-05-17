@@ -37,8 +37,10 @@ after_initialize do
 
   if reviewable_api_enabled
     require_dependency File.expand_path('../models/reviewable_akismet_post.rb', __FILE__)
+    require_dependency File.expand_path('../models/reviewable_akismet_user.rb', __FILE__)
     require_dependency File.expand_path('../serializers/reviewable_akismet_post_serializer.rb', __FILE__)
     register_reviewable_type ReviewableAkismetPost
+    register_reviewable_type ReviewableAkismetUser
   else
     add_to_class(:guardian, :can_review_akismet?) do
       user.try(:staff?)

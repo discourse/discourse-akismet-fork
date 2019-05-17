@@ -2,48 +2,28 @@
 
 require_dependency 'reviewable'
 
-class ReviewableAkismetPost < Reviewable
+class ReviewableAkismetUser < Reviewable
   def build_actions(actions, guardian, _args)
     return [] unless pending?
 
-    build_action(actions, :confirm_spam, icon: 'check')
     build_action(actions, :not_spam, icon: 'thumbs-up')
-    build_action(actions, :ignore, icon: 'times')
-    build_action(actions, :confirm_delete, icon: 'trash-alt', confirm: true) if guardian.is_staff?
-  end
-
-  def post
-    @post ||= (target || Post.with_deleted.find_by(id: target_id))
+    build_action(actions, :reject_user_delete, icon: 'trash-alt', confirm: true) if guardian.is_staff?
   end
 
   # Reviewable#perform should be used instead of these action methods.
   # These are only part of the public API because #perform needs them to be public.
 
-  def perform_confirm_spam(performed_by, _args)
-    log_confirmation(performed_by, 'confirmed_spam')
-
-    successful_transition :approved, :agreed
-  end
-
   def perform_not_spam(performed_by, _args)
     Jobs.enqueue(:update_akismet_status, target_id: target_id, target_class: target_type, status: 'ham')
     log_confirmation(performed_by, 'confirmed_ham')
 
-    PostDestroyer.new(performed_by, post).recover if post.deleted_at
-
     successful_transition :rejected, :disagreed
   end
 
-  def perform_ignore(performed_by, _args)
-    log_confirmation(performed_by, 'ignored')
-
-    successful_transition :ignored, :ignored
-  end
-
-  def perform_confirm_delete(performed_by, _args)
-    if Guardian.new(performed_by).can_delete_user?(post.user)
+  def perform_reject_user_delete(performed_by, _args)
+    if target && Guardian.new(performed_by).can_delete_user?(target)
       log_confirmation(performed_by, 'confirmed_spam_deleted')
-      UserDestroyer.new(performed_by).destroy(post.user, user_deletion_opts(performed_by))
+      UserDestroyer.new(performed_by).destroy(target, user_deletion_opts(performed_by))
     end
 
     successful_transition :deleted, :agreed, recalculate_score: false
@@ -78,9 +58,8 @@ class ReviewableAkismetPost < Reviewable
   end
 
   def log_confirmation(performed_by, custom_type)
-    StaffActionLogger.new(performed_by).log_custom(custom_type,
-      post_id: post.id,
-      topic_id: post.topic_id
-    )
+    StaffActionLogger.new(performed_by).log_custom(custom_type, {})
   end
+
+  def post; end
 end

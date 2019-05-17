@@ -15,6 +15,7 @@ en:
       confirm_spam: "Confirm Spam"
       not_spam: "Not Spam"
       confirm_delete: "Confirm Spam & Delete User"
+      reject_user_delete: "Delete User"
       refresh: "Refresh Posts"
       posts_to_review: "Posts to Review"
       dismiss: "Dismiss"
@@ -35,4 +36,6 @@ en:
       types:
         reviewable_akismet_post:
           title: "Akismet Flagged Post"
+        reviewable_akismet_user:
+          title: "Akismet Flagged User"
 
