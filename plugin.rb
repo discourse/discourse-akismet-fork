@@ -9,6 +9,7 @@
 enabled_site_setting :akismet_enabled
 
 load File.expand_path('../lib/discourse_akismet.rb', __FILE__)
+load File.expand_path('../lib/discourse_akismet/users_bouncer.rb', __FILE__)
 load File.expand_path('../lib/akismet.rb', __FILE__)
 
 # Classes are not loaded at this point so we check for the file
@@ -29,6 +30,7 @@ end
 
 after_initialize do
   require_dependency File.expand_path('../jobs/check_for_spam_posts.rb', __FILE__)
+  require_dependency File.expand_path('../jobs/regular/check_users_for_spam.rb', __FILE__)
   require_dependency File.expand_path('../jobs/check_akismet_post.rb', __FILE__)
   require_dependency File.expand_path('../jobs/update_akismet_status.rb', __FILE__)
 
@@ -39,8 +41,17 @@ after_initialize do
     require_dependency File.expand_path('../models/reviewable_akismet_post.rb', __FILE__)
     require_dependency File.expand_path('../models/reviewable_akismet_user.rb', __FILE__)
     require_dependency File.expand_path('../serializers/reviewable_akismet_post_serializer.rb', __FILE__)
+    require_dependency File.expand_path('../serializers/reviewable_akismet_user_serializer.rb', __FILE__)
     register_reviewable_type ReviewableAkismetPost
     register_reviewable_type ReviewableAkismetUser
+
+    add_model_callback(UserProfile, :after_commit, on: :create) do
+      DiscourseAkismet::UsersBouncer.new.enqueue_for_check(user)
+    end
+
+    add_model_callback(UserProfile, :after_commit, on: :update) do
+      DiscourseAkismet::UsersBouncer.new.enqueue_for_check(user)
+    end
   else
     add_to_class(:guardian, :can_review_akismet?) do
       user.try(:staff?)

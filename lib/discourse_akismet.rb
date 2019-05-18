@@ -62,26 +62,6 @@ module DiscourseAkismet
     extra_args
   end
 
-  def self.args_for_user(user)
-    user_auth_token = user.user_auth_tokens.last
-
-    extra_args = {
-      content_type: 'signup',
-      permalink: "#{Discourse.base_url}/u/#{user.username_lower}",
-      comment_author: user.username,
-      comment_content: user.user_profile.bio_raw,
-      user_ip: user_auth_token.client_ip.to_s,
-      user_agent: user_auth_token.user_agent
-    }
-
-    # Sending the email to akismet is optional
-    if SiteSetting.akismet_transmit_email?
-      extra_args[:comment_author_email] = user.email
-    end
-
-    extra_args
-  end
-
   def self.to_check
     PostCustomField.where(name: 'AKISMET_STATE', value: 'new')
       .where('posts.id IS NOT NULL')

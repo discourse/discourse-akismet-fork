@@ -33,6 +33,8 @@ en:
       change_settings: "Change Settings"
 
     review:
+      user:
+        bio: "Bio"
       types:
         reviewable_akismet_post:
           title: "Akismet Flagged Post"

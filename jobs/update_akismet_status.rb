@@ -10,27 +10,40 @@ module Jobs
 
       return unless SiteSetting.akismet_enabled?
 
-      target = if args[:target_class] == 'Post'
-        args[:target_class].constantize.with_deleted.where(id: args[:target_id]).first
-      elsif args[:target_class] == 'User'
-        args[:target_class].constantize.where(id: args[:target_id]).first
-      end
-
+      target = find_target(args[:target_class], args[:target_id])
       return unless target
 
-      akismet_args = if args[:target_class] == 'Post'
-        DiscourseAkismet.args_for_post(target)
-      elsif args[:target_class] == 'User'
-        DiscourseAkismet.args_for_user(target)
-      end
-
       DiscourseAkismet.with_client do |client|
-        if args[:status] == 'ham'
-          client.submit_ham(akismet_args)
-        elsif args[:status] == 'spam'
-          client.submit_spam(akismet_args)
+        if args[:target_class] == 'Post'
+          submit_post_feedback(client, args[:status], target)
+        elsif args[:target_class] == 'User'
+          submit_user_feedback(client, args[:status], target)
         end
       end
+    end
+
+    private
+
+    def find_target(klass_name, id)
+      if klass_name == 'Post'
+        klass_name.constantize.with_deleted.find_by(id: id)
+      elsif klass_name == 'User'
+        klass_name.constantize.find_by(id: id)
+      end
+    end
+
+    def submit_post_feedback(client, status, post)
+      args = DiscourseAkismet.args_for_post(post)
+
+      if args[:status] == 'ham'
+        client.submit_ham(args)
+      elsif args[:status] == 'spam'
+        client.submit_spam(args)
+      end
+    end
+
+    def submit_user_feedback(client, status, user)
+      DiscourseAkismet::UsersBouncer.new.submit_feedback(client, status, user)
     end
   end
 end

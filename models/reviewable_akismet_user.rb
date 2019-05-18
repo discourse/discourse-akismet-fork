@@ -23,6 +23,7 @@ class ReviewableAkismetUser < Reviewable
   def perform_reject_user_delete(performed_by, _args)
     if target && Guardian.new(performed_by).can_delete_user?(target)
       log_confirmation(performed_by, 'confirmed_spam_deleted')
+      Jobs.enqueue(:update_akismet_status, target_id: target_id, target_class: target_type, status: 'spam')
       UserDestroyer.new(performed_by).destroy(target, user_deletion_opts(performed_by))
     end
 
@@ -49,7 +50,8 @@ class ReviewableAkismetUser < Reviewable
   def user_deletion_opts(performed_by)
     base = {
       context: I18n.t('akismet.delete_reason', performed_by: performed_by.username),
-      delete_posts: true
+      delete_posts: true,
+      quiet: true
     }
 
     base.tap do |b|
@@ -58,7 +60,7 @@ class ReviewableAkismetUser < Reviewable
   end
 
   def log_confirmation(performed_by, custom_type)
-    StaffActionLogger.new(performed_by).log_custom(custom_type, {})
+    StaffActionLogger.new(performed_by).log_custom(custom_type)
   end
 
   def post; end
