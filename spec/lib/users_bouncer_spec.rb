@@ -6,7 +6,11 @@ require 'rails_helper'
 
 RSpec.describe DiscourseAkismet::UsersBouncer do
   describe '#enqueue_for_check' do
-    let(:user) { Fabricate.build(:user, user_profile: Fabricate.build(:user_profile)) }
+    before { SiteSetting.akismet_review_users = true }
+
+    let(:user) do
+      Fabricate.build(:user, user_profile: Fabricate.build(:user_profile), trust_level: TrustLevel[0])
+    end
 
     it 'does not enqueue for check if user trust level is higher than 0' do
       user.trust_level = TrustLevel[1]
@@ -15,15 +19,20 @@ RSpec.describe DiscourseAkismet::UsersBouncer do
     end
 
     it 'enqueues the user when trust level is higher than zero and bio is present' do
-      user.trust_level = TrustLevel[0]
       user.user_profile.bio_raw = "Let's spam"
 
       queued_jobs_for_check(user, 1)
     end
 
     it 'does not enqueue for check if user bio is empty' do
-      user.trust_level = TrustLevel[0]
       user.user_profile.bio_raw = ''
+
+      queued_jobs_for_check(user, 0)
+    end
+
+    it 'xxxxxxx' do
+      SiteSetting.akismet_review_users = false
+      user.user_profile.bio_raw = "Let's spam"
 
       queued_jobs_for_check(user, 0)
     end

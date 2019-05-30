@@ -5,6 +5,7 @@ module DiscourseAkismet
     VALID_STATUSES = %w[spam ham]
 
     def enqueue_for_check(user)
+      return unless SiteSetting.akismet_review_users
       profile = user.user_profile
       return if user.trust_level > TrustLevel[0] || profile.bio_raw.blank? || profile.bio_raw_previously_changed?
 

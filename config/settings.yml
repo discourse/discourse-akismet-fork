@@ -14,4 +14,6 @@ plugins:
     default: true
   skip_akismet_posts:
     default: 50
+  akismet_review_users:
+    default: false
 
