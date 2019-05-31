@@ -24,7 +24,8 @@ module DiscourseAkismet
 
         reviewable.add_score(
           spam_reporter, PostActionType.types[:spam],
-          created_at: reviewable.created_at
+          created_at: reviewable.created_at,
+          reason: 'akismet_spam_user'
         )
       end
     end
