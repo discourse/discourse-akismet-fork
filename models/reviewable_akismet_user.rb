@@ -14,7 +14,7 @@ class ReviewableAkismetUser < Reviewable
   # These are only part of the public API because #perform needs them to be public.
 
   def perform_not_spam(performed_by, _args)
-    Jobs.enqueue(:update_akismet_status, target_id: target_id, target_class: target_type, status: 'ham')
+    bouncer.submit_feedback(target, 'ham')
     log_confirmation(performed_by, 'confirmed_ham')
 
     successful_transition :rejected, :disagreed
@@ -23,7 +23,7 @@ class ReviewableAkismetUser < Reviewable
   def perform_reject_user_delete(performed_by, _args)
     if target && Guardian.new(performed_by).can_delete_user?(target)
       log_confirmation(performed_by, 'confirmed_spam_deleted')
-      Jobs.enqueue(:update_akismet_status, target_id: target_id, target_class: target_type, status: 'spam')
+      bouncer.submit_feedback(target, 'spam')
       UserDestroyer.new(performed_by).destroy(target, user_deletion_opts(performed_by))
     end
 
@@ -31,6 +31,10 @@ class ReviewableAkismetUser < Reviewable
   end
 
   private
+
+  def bouncer
+    DiscourseAkismet::UsersBouncer.new
+  end
 
   def successful_transition(to_state, update_flag_status, recalculate_score: true)
     create_result(:success, to_state)  do |result|

@@ -53,6 +53,8 @@ describe 'ReviewableAkismetUser', if: defined?(Reviewable) do
     let(:user) { Fabricate(:user) }
     let(:reviewable) { ReviewableAkismetUser.needs_review!(target: user, created_by: admin) }
 
+    before { UserAuthToken.generate!(user_id: user.id) }
+
     shared_examples 'it logs actions in the staff actions logger' do
       it 'creates a UserHistory that reflects the action taken' do
         reviewable.perform admin, action
@@ -77,23 +79,26 @@ describe 'ReviewableAkismetUser', if: defined?(Reviewable) do
       end
     end
 
+    shared_examples 'it submits feedback to Akismet' do
+      it 'queus a job tu submit feedback' do
+        expect {
+          reviewable.perform admin, action
+        }.to change(Jobs::UpdateAkismetStatus.jobs, :size).by(1)
+      end
+    end
+
     describe '#perform_not_spam' do
       let(:action) { :not_spam }
       let(:action_name) { 'confirmed_ham' }
       let(:flag_stat_status) { :disagreed }
 
       it_behaves_like 'it logs actions in the staff actions logger'
+      it_behaves_like 'it submits feedback to Akismet'
 
       it 'sets post as clear and reviewable status is changed to rejected' do
         result = reviewable.perform admin, action
 
         expect(result.transition_to).to eq :rejected
-      end
-
-      it 'sends feedback to Akismet since post was not spam' do
-        expect {
-          reviewable.perform admin, action
-        }.to change(Jobs::UpdateAkismetStatus.jobs, :size).by(1)
       end
     end
 
@@ -103,6 +108,7 @@ describe 'ReviewableAkismetUser', if: defined?(Reviewable) do
       let(:flag_stat_status) { :agreed }
 
       it_behaves_like 'it logs actions in the staff actions logger'
+      it_behaves_like 'it submits feedback to Akismet'
 
       it 'confirms spam and reviewable status is changed to deleted' do
         result = reviewable.perform admin, action

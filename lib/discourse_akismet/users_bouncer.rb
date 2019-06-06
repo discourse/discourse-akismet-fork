@@ -30,15 +30,11 @@ module DiscourseAkismet
       end
     end
 
-    def submit_feedback(client, status, user)
+    def submit_feedback(user, status)
       raise Discourse::InvalidParameters.new(:status) unless VALID_STATUSES.include?(status)
-      args = args_for_user(user)
+      feedback = args_for_user(user)
 
-      if args[:status] == 'ham'
-        client.submit_ham(args)
-      elsif args[:status] == 'spam'
-        client.submit_spam(args)
-      end
+      Jobs.enqueue(:update_akismet_status, feedback: feedback, status: status)
     end
 
     private

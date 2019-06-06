@@ -30,7 +30,7 @@ RSpec.describe DiscourseAkismet::UsersBouncer do
       queued_jobs_for_check(user, 0)
     end
 
-    it 'xxxxxxx' do
+    it 'does not enqueue for check if the setting is turned off' do
       SiteSetting.akismet_review_users = false
       user.user_profile.bio_raw = "Let's spam"
 
@@ -94,14 +94,13 @@ RSpec.describe DiscourseAkismet::UsersBouncer do
   end
 
   describe '#submit_feedback' do
-    let(:user) { Fabricate(:user) }
+    let(:user) { Fabricate.build(:user) }
 
     it 'validates that the status is valid' do
       non_valid_status = 'clear'
-      client = mock('Akismet::Client')
 
       expect do
-        described_class.new.submit_feedback(client, non_valid_status, user)
+        described_class.new.submit_feedback(non_valid_status, user)
       end.to raise_error(Discourse::InvalidParameters)
     end
   end

@@ -94,12 +94,21 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
       end
     end
 
+    shared_examples 'it submits feedback to Akismet' do
+      it 'queus a job tu submit feedback' do
+        expect {
+          reviewable.perform admin, action
+        }.to change(Jobs::UpdateAkismetStatus.jobs, :size).by(1)
+      end
+    end
+
     describe '#perform_confirm_spam' do
       let(:action) { :confirm_spam }
       let(:action_name) { 'confirmed_spam' }
       let(:flag_stat_status) { :agreed }
 
       it_behaves_like 'It logs actions in the staff actions logger'
+      it_behaves_like 'it submits feedback to Akismet'
 
       it 'Confirms spam and reviewable status is changed to approved' do
         result = reviewable.perform admin, action
@@ -114,6 +123,7 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
       let(:flag_stat_status) { :disagreed }
 
       it_behaves_like 'It logs actions in the staff actions logger'
+      it_behaves_like 'it submits feedback to Akismet'
 
       it 'Set post as clear and reviewable status is changed to rejected' do
         result = reviewable.perform admin, action
@@ -167,6 +177,7 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
       let(:flag_stat_status) { :agreed }
 
       it_behaves_like 'It logs actions in the staff actions logger'
+      it_behaves_like 'it submits feedback to Akismet'
 
       it 'Confirms spam and reviewable status is changed to deleted' do
         result = reviewable.perform admin, action

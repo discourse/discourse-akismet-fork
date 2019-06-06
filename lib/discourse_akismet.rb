@@ -42,6 +42,12 @@ module DiscourseAkismet
     end
   end
 
+  def self.submit_feedback(post, status)
+    feedback = args_for_post(post)
+
+    Jobs.enqueue(:update_akismet_status, feedback: feedback, status: status)
+  end
+
   def self.args_for_post(post)
     extra_args = {
       content_type: 'forum-post',
