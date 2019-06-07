@@ -95,7 +95,7 @@ describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
     end
 
     shared_examples 'it submits feedback to Akismet' do
-      it 'queus a job tu submit feedback' do
+      it 'queues a job to submit feedback' do
         expect {
           reviewable.perform admin, action
         }.to change(Jobs::UpdateAkismetStatus.jobs, :size).by(1)
