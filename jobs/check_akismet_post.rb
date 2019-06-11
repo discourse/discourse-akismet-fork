@@ -11,6 +11,7 @@ module Jobs
 
       post = Post.where(id: args[:post_id], user_deleted: false).first
       return unless post.present?
+      return if ReviewableQueuedPost.exists?(target: post)
 
       DiscourseAkismet.check_for_spam(post)
     end

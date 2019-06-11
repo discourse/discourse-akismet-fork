@@ -72,6 +72,8 @@ module DiscourseAkismet
     PostCustomField.where(name: 'AKISMET_STATE', value: 'new')
       .where('posts.id IS NOT NULL')
       .where('topics.id IS NOT NULL')
+      .joins('LEFT OUTER JOIN reviewables ON reviewables.target_id = post_custom_fields.post_id')
+      .where('reviewables.target_type IS NULL OR reviewables.type <> ?', ReviewableQueuedPost.name)
       .includes(post: :topic)
       .references(:post, :topic)
   end

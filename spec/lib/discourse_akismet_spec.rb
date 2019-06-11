@@ -118,6 +118,23 @@ describe DiscourseAkismet do
     end
   end
 
+  describe "#to_check" do
+    it 'retrieves posts waiting to be reviewed by Akismet' do
+      described_class.move_to_state(post, 'new')
+
+      posts_to_check = described_class.to_check.map(&:post)
+
+      expect(posts_to_check).to contain_exactly(post)
+    end
+
+    it 'does not retrieve posts that already had another reviewable queued post' do
+      described_class.move_to_state(post, 'new')
+      ReviewableQueuedPost.needs_review!(target: post, created_by: Discourse.system_user)
+
+      expect(described_class.to_check).to be_empty
+    end
+  end
+
   describe "#needs_review" do
     it 'Retrieves a post that needs review' do
       described_class.move_to_state(post, 'needs_review')

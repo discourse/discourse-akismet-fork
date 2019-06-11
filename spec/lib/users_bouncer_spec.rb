@@ -70,6 +70,16 @@ RSpec.describe DiscourseAkismet::UsersBouncer do
       assert_score_was_created(created_score)
     end
 
+    it 'does not create a reviewable if there is another one for the same user' do
+      ReviewableUser.create_for(user)
+      client = mock('Akismet::Client')
+      client.expects(:comment_check).never
+
+      subject.check_user(client, user)
+
+      expect(ReviewableAkismetUser.count).to be_zero
+    end
+
     def assert_reviewable_was_created_correctly(reviewable)
       expect(reviewable.target).to eq user
       expect(reviewable.created_by).to eq Discourse.system_user

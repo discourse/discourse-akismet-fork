@@ -13,6 +13,8 @@ module DiscourseAkismet
     end
 
     def check_user(client, user)
+      return if Reviewable.exists?(target: user)
+
       if client.comment_check(args_for_user(user))
         spam_reporter = Discourse.system_user
 
