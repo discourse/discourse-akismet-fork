@@ -3,9 +3,16 @@
     <div class='reviewable-user-details username'>
       <div class='name'>{{i18n "review.user.username"}}</div>
       <div class='value'>
-        {{reviewable.payload.username}}
+        {{#if reviewable.user_deleted}}
+          {{reviewable.payload.username}}
+        {{else}}
+          <a href={{get-url (concat "/u/" reviewable.payload.username "/summary")}}>
+            {{reviewable.payload.username}}
+          </a>
+        {{/if}}
       </div>
     </div>
+    
     {{reviewable-field classes='reviewable-user-details name'
                                name=(i18n 'review.user.name')
                                value=reviewable.payload.name}}
