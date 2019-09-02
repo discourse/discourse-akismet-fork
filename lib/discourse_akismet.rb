@@ -104,18 +104,16 @@ module DiscourseAkismet
             )
           end
 
-          if defined?(ReviewableAkismetPost)
-            reviewable = ReviewableAkismetPost.needs_review!(
-              created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true,
-              payload: { post_cooked: post.cooked }
-            )
+          reviewable = ReviewableAkismetPost.needs_review!(
+            created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true,
+            payload: { post_cooked: post.cooked }
+          )
 
-            reviewable.add_score(
-              spam_reporter, PostActionType.types[:spam],
-              created_at: reviewable.created_at,
-              reason: 'akismet_spam_post'
-            )
-          end
+          reviewable.add_score(
+            spam_reporter, PostActionType.types[:spam],
+            created_at: reviewable.created_at,
+            reason: 'akismet_spam_post'
+          )
         else
           DiscourseAkismet.move_to_state(post, 'checked')
         end
@@ -125,29 +123,6 @@ module DiscourseAkismet
     # Trigger an event that akismet found spam. This allows people to
     # notify chat rooms or whatnot
     DiscourseEvent.trigger(:akismet_found_spam, spam_count) if spam_count > 0
-  end
-
-  def self.stats
-    result = PostCustomField.where(name: 'AKISMET_STATE').group(:value).count.symbolize_keys!
-    result[:confirmed_spam] ||= 0
-    result[:confirmed_ham] ||= 0
-    result[:needs_review] ||= 0
-    result[:checked] ||= 0
-    result[:scanned] = result[:checked] + result[:needs_review] + result[:confirmed_spam] + result[:confirmed_ham]
-    result
-  end
-
-  def self.needs_review
-    post_ids = PostCustomField.where(name: 'AKISMET_STATE', value: 'needs_review').pluck(:post_id)
-
-    if defined?(Reviewable)
-      pending = Reviewable.statuses[:pending]
-      reviewable_ids = ReviewableAkismetPost.where(target_type: Post.name, target_id: post_ids)
-        .where.not(status: pending).pluck(:target_id)
-    end
-
-    post_ids = post_ids - reviewable_ids if reviewable_ids
-    Post.with_deleted.where(id: post_ids).includes(:topic, :user).references(:topic)
   end
 
   def self.move_to_state(post, state, opts = nil)
@@ -163,17 +138,7 @@ module DiscourseAkismet
     to_update['AKISMET_USER_AGENT'] = opts[:user_agent] if opts[:user_agent].present?
     to_update['AKISMET_REFERRER'] = opts[:referrer] if opts[:referrer].present?
 
-    # New API in Discouse that's better under concurrency
-    if post.respond_to?(:upsert_custom_fields)
-      post.upsert_custom_fields(to_update)
-    else
-      post.custom_fields.merge!(to_update)
-      post.save_custom_fields
-    end
-
-    # Publish the new review count via message bus
-    msg = { akismet_review_count: DiscourseAkismet.needs_review.count }
-    MessageBus.publish('/akismet_counts', msg, user_ids: User.staff.pluck(:id))
+    post.upsert_custom_fields(to_update)
   end
 
   def self.munge_args(&block)

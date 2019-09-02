@@ -11,58 +11,28 @@ enabled_site_setting :akismet_enabled
 load File.expand_path('../lib/discourse_akismet.rb', __FILE__)
 load File.expand_path('../lib/discourse_akismet/users_bouncer.rb', __FILE__)
 load File.expand_path('../lib/akismet.rb', __FILE__)
-
-# Classes are not loaded at this point so we check for the file
-reviewable_api_enabled = File.exist? File.expand_path('../../../app/models/reviewable.rb', __FILE__)
-
-# We still want to run tests associated to the engine ;)
-if reviewable_api_enabled && !Rails.env.test?
-  register_asset "stylesheets/reviewable-akismet-post-styles.scss"
-else
-  load File.expand_path('../lib/discourse_akismet/engine.rb', __FILE__)
-  register_asset "stylesheets/mod-queue-styles.scss"
-
-  add_admin_route 'akismet.title', 'akismet'
-  Discourse::Application.routes.append do
-    mount ::DiscourseAkismet::Engine, at: '/admin/plugins/akismet'
-  end
-end
+register_asset "stylesheets/reviewable-akismet-post-styles.scss"
 
 after_initialize do
   %W[
-    check_for_spam_posts
-    regular/check_users_for_spam
-    regular/confirm_akismet_flagged_posts
-    check_akismet_post
-    update_akismet_status
+    jobs/check_for_spam_posts
+    jobs/regular/check_users_for_spam
+    jobs/regular/confirm_akismet_flagged_posts
+    jobs/check_akismet_post
+    jobs/update_akismet_status
+    models/reviewable_akismet_post
+    models/reviewable_akismet_user
+    serializers/reviewable_akismet_post_serializer
+    serializers/reviewable_akismet_user_serializer
   ].each do |filename|
-    require_dependency File.expand_path("../jobs/#{filename}.rb", __FILE__)
+    require_dependency File.expand_path("../#{filename}.rb", __FILE__)
   end
+  register_reviewable_type ReviewableAkismetPost
+  register_reviewable_type ReviewableAkismetUser
 
-  # We want to include this even if the plugin is not enabled, that's why we use false here.
-  add_to_serializer(:site, :reviewable_api_enabled, false) { reviewable_api_enabled }
-
-  if reviewable_api_enabled
-    require_dependency File.expand_path('../models/reviewable_akismet_post.rb', __FILE__)
-    require_dependency File.expand_path('../models/reviewable_akismet_user.rb', __FILE__)
-    require_dependency File.expand_path('../serializers/reviewable_akismet_post_serializer.rb', __FILE__)
-    require_dependency File.expand_path('../serializers/reviewable_akismet_user_serializer.rb', __FILE__)
-    register_reviewable_type ReviewableAkismetPost
-    register_reviewable_type ReviewableAkismetUser
-
-    add_model_callback(UserProfile, :before_save) do
-      if bio_raw_changed? && bio_raw.present?
-        DiscourseAkismet::UsersBouncer.new.enqueue_for_check(user)
-      end
-    end
-
-  else
-    add_to_class(:guardian, :can_review_akismet?) do
-      user.try(:staff?)
-    end
-
-    add_to_serializer(:current_user, :akismet_review_count) do
-      scope.can_review_akismet? ? DiscourseAkismet.needs_review.count : nil
+  add_model_callback(UserProfile, :before_save) do
+    if bio_raw_changed? && bio_raw.present?
+      DiscourseAkismet::UsersBouncer.new.enqueue_for_check(user)
     end
   end
 
@@ -100,17 +70,10 @@ after_initialize do
 
       args = { user_id: user.id, new_ip: opts[:anonymize_ip] }
 
-      # TODO remove post Discourse 2.1
-      if defined? DB
-        DB.exec sql, args
-      else
-        PostCustomField.exec_sql(sql, args)
-      end
+      DB.exec sql, args
     end
   end
 
-  if reviewable_api_enabled
-    staff_actions = %i[confirmed_spam confirmed_ham ignored confirmed_spam_deleted]
-    extend_list_method(UserHistory, :staff_actions, staff_actions)
-  end
+  staff_actions = %i[confirmed_spam confirmed_ham ignored confirmed_spam_deleted]
+  extend_list_method(UserHistory, :staff_actions, staff_actions)
 end

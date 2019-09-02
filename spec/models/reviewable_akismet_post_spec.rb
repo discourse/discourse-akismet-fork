@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-describe 'ReviewableAkismetPost', if: defined?(Reviewable) do
+describe 'ReviewableAkismetPost' do
   let(:guardian) { Guardian.new }
 
   describe '#build_actions' do

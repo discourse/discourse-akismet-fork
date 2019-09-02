@@ -85,7 +85,7 @@ describe DiscourseAkismet do
     end
   end
 
-  describe '#check_for_spam', if: defined?(Reviewable) do
+  describe '#check_for_spam' do
     it 'Creates a new ReviewableAkismetPost when spam is confirmed by Akismet' do
       DiscourseAkismet.move_to_state(post, 'new')
 
@@ -132,32 +132,6 @@ describe DiscourseAkismet do
       ReviewableQueuedPost.needs_review!(target: post, created_by: Discourse.system_user)
 
       expect(described_class.to_check).to be_empty
-    end
-  end
-
-  describe "#needs_review" do
-    it 'Retrieves a post that needs review' do
-      described_class.move_to_state(post, 'needs_review')
-
-      expect(described_class.needs_review).not_to be_empty
-    end
-
-    describe 'When the reviewable API is present', if: defined?(Reviewable) do
-      it 'Does not retrieve posts that were reviewed through the new API' do
-        described_class.move_to_state(post, 'needs_review')
-
-        Fabricate(:reviewable_akismet_post, target: post, status: Reviewable.statuses[:approved])
-
-        expect(described_class.needs_review).to be_empty
-      end
-
-      it 'Retrieves posts that were not reviewed through the new API yet' do
-        described_class.move_to_state(post, 'needs_review')
-
-        Fabricate(:reviewable_akismet_post, target: post, status: Reviewable.statuses[:pending])
-
-        expect(described_class.needs_review).not_to be_empty
-      end
     end
   end
 end

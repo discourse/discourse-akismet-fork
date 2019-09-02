@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-describe 'Reviewables rake tasks', if: defined?(Reviewable) do
+describe 'Reviewables rake tasks' do
   before do
     Rake::Task.clear
     Discourse::Application.load_tasks

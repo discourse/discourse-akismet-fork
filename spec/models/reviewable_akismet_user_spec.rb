@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-describe 'ReviewableAkismetUser', if: defined?(Reviewable) do
+describe 'ReviewableAkismetUser' do
   let(:guardian) { Guardian.new }
 
   describe '#build_actions' do
