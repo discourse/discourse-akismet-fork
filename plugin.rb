@@ -29,10 +29,15 @@ else
 end
 
 after_initialize do
-  require_dependency File.expand_path('../jobs/check_for_spam_posts.rb', __FILE__)
-  require_dependency File.expand_path('../jobs/regular/check_users_for_spam.rb', __FILE__)
-  require_dependency File.expand_path('../jobs/check_akismet_post.rb', __FILE__)
-  require_dependency File.expand_path('../jobs/update_akismet_status.rb', __FILE__)
+  %W[
+    check_for_spam_posts
+    regular/check_users_for_spam
+    regular/confirm_akismet_flagged_posts
+    check_akismet_post
+    update_akismet_status
+  ].each do |filename|
+    require_dependency File.expand_path("../jobs/#{filename}.rb", __FILE__)
+  end
 
   # We want to include this even if the plugin is not enabled, that's why we use false here.
   add_to_serializer(:site, :reviewable_api_enabled, false) { reviewable_api_enabled }

@@ -24,6 +24,10 @@ class ReviewableAkismetUser < Reviewable
     if target && Guardian.new(performed_by).can_delete_user?(target)
       log_confirmation(performed_by, 'confirmed_spam_deleted')
       bouncer.submit_feedback(target, 'spam')
+      Jobs.enqueue(
+        :confirm_akismet_flagged_posts,
+        user_id: target.id, performed_by_id: performed_by.id
+      )
       UserDestroyer.new(performed_by).destroy(target, user_deletion_opts(performed_by))
     end
 
@@ -55,6 +59,7 @@ class ReviewableAkismetUser < Reviewable
     base = {
       context: I18n.t('akismet.delete_reason', performed_by: performed_by.username),
       delete_posts: true,
+      delete_as_spammer: true,
       quiet: true
     }
 

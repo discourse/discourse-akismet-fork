@@ -123,4 +123,27 @@ describe 'ReviewableAkismetUser', if: defined?(Reviewable) do
       end
     end
   end
+
+  describe 'deleting existing flagged posts for a flagged user' do
+    let(:admin) { Fabricate(:admin) }
+    let(:user) { Fabricate(:user) }
+    let(:reviewable) { ReviewableAkismetUser.needs_review!(target: user, created_by: admin) }
+
+    before do
+      UserAuthToken.generate!(user_id: user.id)
+    end
+
+    it 'queues a job to approve existing Akismet flagged posts' do
+      expect { reviewable.perform(admin, :reject_user_delete) }.to change(Jobs::ConfirmAkismetFlaggedPosts.jobs, :size).by(1)
+    end
+
+    it 'approved flagged posts by the flagged user' do
+      flagged_post = Fabricate(:post, user: user)
+      flagged_post_reviewable = ReviewableFlaggedPost.needs_review!(target: flagged_post, created_by: admin)
+
+      reviewable.perform admin, :reject_user_delete
+
+      expect(flagged_post_reviewable.reload.status).to eq(Reviewable.statuses[:approved])
+    end
+  end
 end
