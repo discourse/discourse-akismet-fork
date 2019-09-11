@@ -40,6 +40,16 @@ RSpec.describe Jobs::ConfirmAkismetFlaggedPosts do
 
       expect(updated_post_reviewable.status).to eq(Reviewable.statuses[:approved])
     end
+
+    it 'only approves pending flagged posts' do
+      @user_post_reviewable.perform(admin, :confirm_spam)
+      last_update = @user_post_reviewable.updated_at
+      subject.execute(user_id: user.id, performed_by_id: admin.id)
+
+      updated_post_reviewable = @user_post_reviewable.reload
+
+      expect(updated_post_reviewable.updated_at).to eq(last_update)
+    end
   end
 
   def reviewable_post_for(user)

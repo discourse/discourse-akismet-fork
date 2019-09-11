@@ -9,7 +9,7 @@ module Jobs
       performed_by = User.find_by(id: args[:performed_by_id])
       post_ids = Post.with_deleted.where(user_id: args[:user_id]).pluck(:id)
 
-      ReviewableAkismetPost.where(target_id: post_ids).find_each do |reviewable|
+      ReviewableAkismetPost.where(target_id: post_ids, status: Reviewable.statuses[:pending]).find_each do |reviewable|
         reviewable.perform(performed_by, :confirm_spam)
       end
     end
