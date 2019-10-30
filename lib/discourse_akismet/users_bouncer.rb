@@ -4,7 +4,7 @@ module DiscourseAkismet
   class UsersBouncer
     VALID_STATUSES = %w[spam ham]
 
-    def should_check_user?(user)
+    def should_check?(user)
       SiteSetting.akismet_review_users &&
         user.trust_level === TrustLevel[0] &&
         user.user_profile.bio_raw.present? &&
@@ -13,12 +13,12 @@ module DiscourseAkismet
     end
 
     def enqueue_for_check(user)
-      return if !should_check_user?(user)
+      return unless should_check?(user)
       Jobs.enqueue(:check_users_for_spam, user_id: user.id)
     end
 
     def check_user(client, user)
-      return if !should_check_user?(user)
+      return unless should_check?(user)
 
       if client.comment_check(args_for_user(user))
         spam_reporter = Discourse.system_user

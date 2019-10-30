@@ -9,18 +9,18 @@
 enabled_site_setting :akismet_enabled
 
 load File.expand_path('../lib/discourse_akismet/engine.rb', __FILE__)
-load File.expand_path('../lib/discourse_akismet.rb', __FILE__)
 load File.expand_path('../lib/discourse_akismet/users_bouncer.rb', __FILE__)
+load File.expand_path('../lib/discourse_akismet/posts_bouncer.rb', __FILE__)
 load File.expand_path('../lib/akismet.rb', __FILE__)
 register_asset "stylesheets/reviewable-akismet-post-styles.scss"
 
 after_initialize do
   %W[
-    jobs/check_for_spam_posts
+    jobs/scheduled/check_for_spam_posts
     jobs/regular/check_users_for_spam
     jobs/regular/confirm_akismet_flagged_posts
-    jobs/check_akismet_post
-    jobs/update_akismet_status
+    jobs/regular/check_akismet_post
+    jobs/regular/update_akismet_status
     models/reviewable_akismet_post
     models/reviewable_akismet_user
     serializers/reviewable_akismet_post_serializer
@@ -39,11 +39,13 @@ after_initialize do
 
   # Store extra data for akismet
   on(:post_created) do |post, params|
-    if DiscourseAkismet.should_check_post?(post)
-      DiscourseAkismet.move_to_state(post, 'new', params)
+    bouncer = DiscourseAkismet::PostsBouncer.new
+    if bouncer.should_check?(post)
+      bouncer.store_additional_information(post, params)
+      bouncer.move_to_state(post, 'new')
 
       # Enqueue checks for TL0 posts faster
-      Jobs.enqueue(:check_akismet_post, post_id: post.id) if post.user.trust_level == 0
+      bouncer.enqueue_for_check(post) if post.user.trust_level == 0
     end
   end
 

@@ -9,12 +9,14 @@ describe 'Reviewables rake tasks' do
     SiteSetting.akismet_api_key = 'fake_key'
   end
 
+  let(:bouncer) { DiscourseAkismet::PostsBouncer.new }
+
   describe '#migrate_akismet_reviews' do
     let(:post) { Fabricate(:post) }
 
     %w[checked skipped new].each do |state|
       it "Does not migrate post that were tagged as #{state}" do
-        DiscourseAkismet.move_to_state(post, state)
+        bouncer.move_to_state(post, state)
 
         run_migration
         created_reviewables = ReviewableAkismetPost.count
@@ -28,7 +30,7 @@ describe 'Reviewables rake tasks' do
 
     %w[dismissed confirmed_spam confirmed_ham].each do |state|
       it "Migrates posts that were tagged as #{state}" do
-        DiscourseAkismet.move_to_state(post, state)
+        bouncer.move_to_state(post, state)
         log_action(admin, post, state)
         actions_to_perform = 2
 
@@ -43,7 +45,7 @@ describe 'Reviewables rake tasks' do
 
     it 'Migrates posts needing review and leaves them ready to be reviewed with the new API' do
       state = 'needs_review'
-      DiscourseAkismet.move_to_state(post, state)
+      bouncer.move_to_state(post, state)
       actions_to_perform = 1
 
       run_migration
@@ -56,7 +58,7 @@ describe 'Reviewables rake tasks' do
 
     it 'Migrates posts that were soft deleted and tag the new reviewable to reflect that' do
       action = 'confirmed_spam_deleted'
-      DiscourseAkismet.move_to_state(post, 'confirmed_spam')
+      bouncer.move_to_state(post, 'confirmed_spam')
       log_action(admin, post, action)
 
       run_migration
@@ -79,7 +81,7 @@ describe 'Reviewables rake tasks' do
 
       it 'Creates a pending score for pending reviews' do
         state = 'needs_review'
-        DiscourseAkismet.move_to_state(post, state)
+        bouncer.move_to_state(post, state)
 
         run_migration
         reviewable = ReviewableAkismetPost.includes(:reviewable_scores).last
@@ -94,7 +96,7 @@ describe 'Reviewables rake tasks' do
       %w[dismissed confirmed_spam confirmed_ham].each do |state|
         it "Creates an score with take action bonus when migrating a review with state: #{state} " do
           expected_bonus = 5.0
-          DiscourseAkismet.move_to_state(post, state)
+          bouncer.move_to_state(post, state)
           log_action(admin, post, state)
 
           run_migration

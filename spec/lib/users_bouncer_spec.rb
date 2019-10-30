@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe DiscourseAkismet::UsersBouncer, if: defined?(Reviewable) do
+RSpec.describe DiscourseAkismet::UsersBouncer do
 
   let(:user) do
     user = Fabricate(:user, trust_level: TrustLevel[0])
@@ -13,46 +13,46 @@ RSpec.describe DiscourseAkismet::UsersBouncer, if: defined?(Reviewable) do
 
   before { SiteSetting.akismet_review_users = true }
 
-  describe "#should_check_user?" do
+  describe "#should_check?" do
 
     it "returns false when setting is disabled" do
       SiteSetting.akismet_review_users = false
 
-      expect(subject.should_check_user?(user)).to eq(false)
+      expect(subject.should_check?(user)).to eq(false)
     end
 
     it "returns false when user is higher than TL0" do
       user.trust_level = TrustLevel[1]
 
-      expect(subject.should_check_user?(user)).to eq(false)
+      expect(subject.should_check?(user)).to eq(false)
     end
 
     it "returns false when user has no bio" do
       user.user_profile.bio_raw = ""
 
-      expect(subject.should_check_user?(user)).to eq(false)
+      expect(subject.should_check?(user)).to eq(false)
     end
 
     it "returns false if a Reviewable already exists for that user" do
       ReviewableUser.create_for(user)
 
-      expect(subject.should_check_user?(user)).to eq(false)
+      expect(subject.should_check?(user)).to eq(false)
     end
 
     it "returns true for TL0 with a bio" do
-      expect(subject.should_check_user?(user)).to eq(true)
+      expect(subject.should_check?(user)).to eq(true)
     end
 
     it "returns false when there are no auth token logs for that user" do
       user.user_auth_token_logs = []
 
-      expect(subject.should_check_user?(user)).to eq(false)
+      expect(subject.should_check?(user)).to eq(false)
     end
 
     it "returns false when there client ip is not present" do
       user.user_auth_token_logs = [UserAuthTokenLog.new(client_ip: nil, action: 'an_action')]
 
-      expect(subject.should_check_user?(user)).to eq(false)
+      expect(subject.should_check?(user)).to eq(false)
     end
   end
 

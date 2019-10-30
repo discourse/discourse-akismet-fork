@@ -6,14 +6,15 @@ module Jobs
     # Check a single post for spam. We do this for TL0 to get a faster response
     # without batching.
     def execute(args)
-      raise Discourse::InvalidParameters.new(:post_id) unless args[:post_id].present?
       return unless SiteSetting.akismet_enabled?
 
-      post = Post.where(id: args[:post_id], user_deleted: false).first
-      return unless post.present?
+      post = Post.find_by(id: args[:post_id], user_deleted: false)
+      raise Discourse::InvalidParameters.new(:post_id) if post.nil?
+
       return if ReviewableQueuedPost.exists?(target: post)
 
-      DiscourseAkismet.check_for_spam(post)
+      client = Akismet::Client.build_client
+      DiscourseAkismet::PostsBouncer.new.check_for_spam(client, post)
     end
   end
 end

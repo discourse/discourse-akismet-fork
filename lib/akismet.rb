@@ -17,9 +17,8 @@ class Akismet
       @base_url = base_url
     end
 
-    def self.with_client(api_key:, base_url:)
-      client = self.new(api_key: api_key, base_url: base_url)
-      yield client if block_given?
+    def self.build_client
+      new(api_key: SiteSetting.akismet_api_key, base_url: Discourse.base_url)
     end
 
     def comment_check(body)
@@ -34,18 +33,8 @@ class Akismet
       response_body == VALID_COMMENT_CHECK_RESPONSE.first
     end
 
-    def submit_spam(body)
-      submit_feedback('submit-spam', body)
-    end
-
-    def submit_ham(body)
-      submit_feedback('submit-ham', body)
-    end
-
-    private
-
-    def submit_feedback(method, body)
-      response = post(method, body)
+    def submit_feedback(state, body)
+      response = post("submit-#{state}", body)
       response_body = response.body
 
       if response_body != VALID_SUBMIT_RESPONSE
@@ -54,6 +43,8 @@ class Akismet
 
       true
     end
+
+    private
 
     # From https://akismet.com/development/api/#detailed-docs
     #  If possible, your user agent string should always use the following format:

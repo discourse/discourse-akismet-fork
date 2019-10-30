@@ -54,7 +54,7 @@ class ReviewableAkismetPost < Reviewable
   private
 
   def bouncer
-    DiscourseAkismet
+    DiscourseAkismet::PostsBouncer.new
   end
 
   def successful_transition(to_state, update_flag_status, recalculate_score: true)
