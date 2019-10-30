@@ -19,7 +19,7 @@ module Jobs
       client = Akismet::Client.build_client
 
       [to_check].flatten.each do |post|
-        result = bouncer.check_post(client, post)
+        result = bouncer.perform_check(client, post)
         spam_count += 1 if result
       end
 

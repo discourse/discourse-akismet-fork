@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module DiscourseAkismet
-  class PostsBouncer
+  class PostsBouncer < Bouncer
     def self.to_check
       PostCustomField.where(name: 'AKISMET_STATE', value: 'new')
         .where('posts.id IS NOT NULL')
@@ -54,54 +54,9 @@ module DiscourseAkismet
       post.upsert_custom_fields(values)
     end
 
-    def move_to_state(post, state)
-      return if post.blank? || SiteSetting.akismet_api_key.blank?
-      post.upsert_custom_fields("AKISMET_STATE" => state)
-    end
-
     def enqueue_for_check(post)
       return unless should_check?(post)
       Jobs.enqueue(:check_akismet_post, post_id: post.id)
-    end
-
-    def check_post(client, post)
-      if post.user_deleted? || !post.topic
-        move_to_state(post, 'skipped')
-        return false
-      end
-
-      # If the post is spam, mark it for review and destroy it
-      if client.comment_check(args_for_post(post))
-        spam_reporter = Discourse.system_user
-        PostDestroyer.new(spam_reporter, post).destroy
-        move_to_state(post, 'needs_review')
-
-        # Send a message to the user explaining that it happened
-        notify_poster(post) if SiteSetting.akismet_notify_user?
-
-        reviewable = ReviewableAkismetPost.needs_review!(
-          created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true,
-          payload: { post_cooked: post.cooked }
-        )
-
-        reviewable.add_score(
-          spam_reporter, PostActionType.types[:spam],
-          created_at: reviewable.created_at,
-          reason: 'akismet_spam_post'
-        )
-
-        true
-      else
-        move_to_state(post, 'checked')
-
-        false
-      end
-    end
-
-    def submit_feedback(post, status)
-      feedback = args_for_post(post)
-
-      Jobs.enqueue(:update_akismet_status, feedback: feedback, status: status)
     end
 
     def munge_args(&block)
@@ -112,7 +67,7 @@ module DiscourseAkismet
       @munger = nil
     end
 
-    def args_for_post(post)
+    def args_for(post)
       extra_args = {
         content_type: 'forum-post',
         referrer: post.custom_fields['AKISMET_REFERRER'],
@@ -133,6 +88,32 @@ module DiscourseAkismet
     end
 
     private
+
+    def before_check(post)
+      return true unless post.user_deleted? || post.topic.nil?
+
+      move_to_state(post, 'skipped')
+      false
+    end
+
+    def mark_as_spam(post)
+      PostDestroyer.new(spam_reporter, post).destroy
+      move_to_state(post, 'needs_review')
+
+      # Send a message to the user explaining that it happened
+      notify_poster(post) if SiteSetting.akismet_notify_user?
+
+      reviewable = ReviewableAkismetPost.needs_review!(
+        created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true,
+        payload: { post_cooked: post.cooked }
+      )
+
+      add_score(reviewable, 'akismet_spam_post')
+    end
+
+    def mark_as_clear(post)
+      move_to_state(post, 'checked')
+    end
 
     def notify_poster(post)
       SystemMessage.new(post.user).create('akismet_spam', topic_title: post.topic.title)

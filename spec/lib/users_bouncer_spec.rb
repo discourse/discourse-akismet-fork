@@ -69,7 +69,7 @@ RSpec.describe DiscourseAkismet::UsersBouncer do
   describe "#check_user" do
     it "does not create a Reviewable if Akismet says it's not spam" do
       expect {
-        subject.check_user(akismet(is_spam: false), user)
+        subject.perform_check(akismet(is_spam: false), user)
       }.to_not change {
         ReviewableAkismetUser.count
       }
@@ -77,7 +77,7 @@ RSpec.describe DiscourseAkismet::UsersBouncer do
 
     it "creates a Reviewable if Akismet says it's spam" do
       expect {
-        subject.check_user(akismet(is_spam: true), user)
+        subject.perform_check(akismet(is_spam: true), user)
       }.to change {
         ReviewableAkismetUser.count
       }.by(1)

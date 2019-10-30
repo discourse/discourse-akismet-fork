@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 module DiscourseAkismet
-  class UsersBouncer
-    VALID_STATUSES = %w[spam ham]
-
+  class UsersBouncer < Bouncer
     def should_check?(user)
       SiteSetting.akismet_review_users &&
         user.trust_level === TrustLevel[0] &&
@@ -17,36 +15,25 @@ module DiscourseAkismet
       Jobs.enqueue(:check_users_for_spam, user_id: user.id)
     end
 
-    def check_user(client, user)
-      return unless should_check?(user)
-
-      if client.comment_check(args_for_user(user))
-        spam_reporter = Discourse.system_user
-
-        reviewable = ReviewableAkismetUser.needs_review!(
-          target: user, reviewable_by_moderator: true,
-          created_by: spam_reporter,
-          payload: { username: user.username, name: user.name, email: user.email, bio: user.user_profile.bio_raw }
-        )
-
-        reviewable.add_score(
-          spam_reporter, PostActionType.types[:spam],
-          created_at: reviewable.created_at,
-          reason: 'akismet_spam_user'
-        )
-      end
-    end
-
-    def submit_feedback(user, status)
-      raise Discourse::InvalidParameters.new(:status) unless VALID_STATUSES.include?(status)
-      feedback = args_for_user(user)
-
-      Jobs.enqueue(:update_akismet_status, feedback: feedback, status: status)
-    end
-
     private
 
-    def args_for_user(user)
+    def before_check(user)
+      should_check?(user)
+    end
+
+    def mark_as_spam(user)
+      reviewable = ReviewableAkismetUser.needs_review!(
+        target: user, reviewable_by_moderator: true,
+        created_by: spam_reporter,
+        payload: { username: user.username, name: user.name, email: user.email, bio: user.user_profile.bio_raw }
+      )
+
+      add_score(reviewable, 'akismet_spam_user')
+    end
+
+    def mark_as_clear(user); end
+
+    def args_for(user)
       profile = user.user_profile
       token = user.user_auth_token_logs.last
 

@@ -7,7 +7,7 @@ module Jobs
       raise Discourse::InvalidParameters.new(:user_id) unless user.present?
 
       client = Akismet::Client.build_client
-      DiscourseAkismet::UsersBouncer.new.check_user(client, user)
+      DiscourseAkismet::UsersBouncer.new.perform_check(client, user)
     end
   end
 end

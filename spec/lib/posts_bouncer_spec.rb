@@ -11,7 +11,7 @@ describe DiscourseAkismet::PostsBouncer do
 
   let(:post) { Fabricate(:post) }
 
-  describe '#args_for_post' do
+  describe '#args_for' do
     before do
       post.upsert_custom_fields(
         'AKISMET_REFERRER' => 'https://discourse.org',
@@ -21,7 +21,7 @@ describe DiscourseAkismet::PostsBouncer do
     end
 
     it "should return args for a post" do
-      result = subject.args_for_post(post)
+      result = subject.args_for(post)
       expect(result[:content_type]).to eq('forum-post')
       expect(result[:permalink]).to be_present
       expect(result[:comment_content]).to be_present
@@ -34,7 +34,7 @@ describe DiscourseAkismet::PostsBouncer do
 
     it "will omit email if the site setting is enabled" do
       SiteSetting.akismet_transmit_email = false
-      result = subject.args_for_post(post)
+      result = subject.args_for(post)
       expect(result[:comment_author_email]).to be_blank
     end
 
@@ -51,12 +51,12 @@ describe DiscourseAkismet::PostsBouncer do
       end
 
       it "will munge the args before returning them" do
-        result = subject.args_for_post(post)
+        result = subject.args_for(post)
         expect(result[:user_agent]).to be_blank
         expect(result[:comment_author]).to eq("CUSTOM: #{post.user.username}")
 
         subject.reset_munge
-        result = subject.args_for_post(post)
+        result = subject.args_for(post)
         expect(result[:user_agent]).to eq('Discourse Agent')
         expect(result[:comment_author]).to eq(post.user.username)
       end
@@ -94,7 +94,7 @@ describe DiscourseAkismet::PostsBouncer do
 
       stub_spam_confirmation
 
-      subject.check_post(client, post)
+      subject.perform_check(client, post)
       reviewable_akismet_post = ReviewableAkismetPost.last
 
       expect(reviewable_akismet_post.status).to eq Reviewable.statuses[:pending]
@@ -108,7 +108,7 @@ describe DiscourseAkismet::PostsBouncer do
 
       stub_spam_confirmation
 
-      subject.check_post(client, post)
+      subject.perform_check(client, post)
       reviewable_akismet_score = ReviewableScore.last
 
       expect(reviewable_akismet_score.user).to eq Discourse.system_user

@@ -9,6 +9,7 @@
 enabled_site_setting :akismet_enabled
 
 load File.expand_path('../lib/discourse_akismet/engine.rb', __FILE__)
+load File.expand_path('../lib/discourse_akismet/bouncer.rb', __FILE__)
 load File.expand_path('../lib/discourse_akismet/users_bouncer.rb', __FILE__)
 load File.expand_path('../lib/discourse_akismet/posts_bouncer.rb', __FILE__)
 load File.expand_path('../lib/akismet.rb', __FILE__)
