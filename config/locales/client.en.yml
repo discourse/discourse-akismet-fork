@@ -9,6 +9,11 @@ en:
             confirmed_spam_deleted: "Confirm spam and delete user"
             dismissed: 'Dismiss spam'
             ignored: 'Ignore spam'
+      akismet_states:
+        new: Akismet hasn't check this user for spam yet.
+        skipped: This user doesn't have enough information to be reviewed by Akismet.
+        checked: Akismet checked this user and decided that it's not spam.
+        spam: Akismet decided that this user is spam.
             
     akismet:
       title: "Akismet"

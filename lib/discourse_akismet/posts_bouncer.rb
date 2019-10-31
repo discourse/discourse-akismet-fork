@@ -54,11 +54,6 @@ module DiscourseAkismet
       post.upsert_custom_fields(values)
     end
 
-    def enqueue_for_check(post)
-      return unless should_check?(post)
-      Jobs.enqueue(:check_akismet_post, post_id: post.id)
-    end
-
     def munge_args(&block)
       @munger = block
     end
@@ -89,16 +84,17 @@ module DiscourseAkismet
 
     private
 
+    def enqueue_job(post)
+      Jobs.enqueue(:check_akismet_post, post_id: post.id)
+    end
+
     def before_check(post)
       return true unless post.user_deleted? || post.topic.nil?
-
-      move_to_state(post, 'skipped')
       false
     end
 
     def mark_as_spam(post)
       PostDestroyer.new(spam_reporter, post).destroy
-      move_to_state(post, 'needs_review')
 
       # Send a message to the user explaining that it happened
       notify_poster(post) if SiteSetting.akismet_notify_user?
@@ -109,6 +105,7 @@ module DiscourseAkismet
       )
 
       add_score(reviewable, 'akismet_spam_post')
+      move_to_state(post, 'spam')
     end
 
     def mark_as_clear(post)

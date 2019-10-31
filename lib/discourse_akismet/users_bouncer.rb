@@ -10,12 +10,11 @@ module DiscourseAkismet
         !Reviewable.exists?(target: user)
     end
 
-    def enqueue_for_check(user)
-      return unless should_check?(user)
+    private
+
+    def enqueue_job(user)
       Jobs.enqueue(:check_users_for_spam, user_id: user.id)
     end
-
-    private
 
     def before_check(user)
       should_check?(user)
@@ -29,9 +28,12 @@ module DiscourseAkismet
       )
 
       add_score(reviewable, 'akismet_spam_user')
+      move_to_state(user, 'spam')
     end
 
-    def mark_as_clear(user); end
+    def mark_as_clear(user)
+      move_to_state(user, 'checked')
+    end
 
     def args_for(user)
       profile = user.user_profile

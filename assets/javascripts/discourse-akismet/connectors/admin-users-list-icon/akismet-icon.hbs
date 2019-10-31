@@ -1,0 +1,9 @@
+{{#if new}}
+  {{d-icon "far-clock" title=(concat "admin.akismet_states." user.akismet_state)}}
+{{else if skipped}}
+  {{d-icon "eye-slash" title=(concat "admin.akismet_states." user.akismet_state)}}
+{{else if checked}}
+  {{d-icon "check" title=(concat "admin.akismet_states." user.akismet_state)}}
+{{else if spam}}
+  {{d-icon "times" title=(concat "admin.akismet_states." user.akismet_state)}}
+{{/if}}
