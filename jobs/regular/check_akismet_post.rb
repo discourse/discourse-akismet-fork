@@ -9,7 +9,7 @@ module Jobs
       return unless SiteSetting.akismet_enabled?
 
       post = Post.find_by(id: args[:post_id], user_deleted: false)
-      raise Discourse::InvalidParameters.new(:post_id) if post.nil?
+      return if post.blank?
 
       return if ReviewableQueuedPost.exists?(target: post)
 
