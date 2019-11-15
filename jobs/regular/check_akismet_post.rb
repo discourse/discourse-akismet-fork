@@ -8,8 +8,7 @@ module Jobs
     def execute(args)
       return unless SiteSetting.akismet_enabled?
 
-      post = Post.find_by(id: args[:post_id], user_deleted: false)
-      return if post.blank?
+      return unless post = Post.find_by(id: args[:post_id], user_deleted: false)
 
       return if ReviewableQueuedPost.exists?(target: post)
 
