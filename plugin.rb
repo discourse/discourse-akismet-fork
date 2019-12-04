@@ -19,6 +19,7 @@ register_asset "stylesheets/akismet-icon.scss"
 after_initialize do
   %W[
     jobs/scheduled/check_for_spam_posts
+    jobs/scheduled/check_for_spam_users
     jobs/regular/check_users_for_spam
     jobs/regular/confirm_akismet_flagged_posts
     jobs/regular/check_akismet_post
@@ -48,7 +49,6 @@ after_initialize do
     bouncer = DiscourseAkismet::PostsBouncer.new
     if bouncer.should_check?(post)
       bouncer.store_additional_information(post, params)
-      bouncer.move_to_state(post, 'new')
 
       # Enqueue checks for TL0 posts faster
       bouncer.enqueue_for_check(post) if post.user.trust_level == 0

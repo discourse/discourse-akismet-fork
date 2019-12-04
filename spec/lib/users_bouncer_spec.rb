@@ -5,13 +5,16 @@ require 'rails_helper'
 RSpec.describe DiscourseAkismet::UsersBouncer do
 
   let(:user) do
-    user = Fabricate(:user, trust_level: TrustLevel[0])
-    user.user_profile.bio_raw = "I am batman"
-    user.user_auth_token_logs = [UserAuthTokenLog.new(client_ip: '127.0.0.1', action: 'an_action')]
-    user
+    Fabricate(:user, trust_level: TrustLevel[0]).tap do |user|
+      user.user_profile.bio_raw = "I am batman"
+      user.user_auth_token_logs = [UserAuthTokenLog.new(client_ip: '127.0.0.1', action: 'an_action')]
+    end
   end
 
-  before { SiteSetting.akismet_review_users = true }
+  before do
+    SiteSetting.akismet_review_users = true
+    SiteSetting.akismet_api_key = 'fake_key'
+  end
 
   describe "#should_check?" do
 
@@ -101,6 +104,38 @@ RSpec.describe DiscourseAkismet::UsersBouncer do
       mock("Akismet::Client").tap do |client|
         client.expects(:comment_check).returns(is_spam)
       end
+    end
+  end
+
+  describe ".to_check" do
+    it 'returns users in new state and ignore the rest' do
+      user_to_check = Fabricate(:user, trust_level: 0)
+      user_to_ignore = Fabricate(:user, trust_level: 0)
+      subject.move_to_state(user_to_check, 'new')
+      subject.move_to_state(user_to_ignore, 'confirmed_ham')
+
+      expect(described_class.to_check).to contain_exactly(user_to_check)
+    end
+
+    it 'only checks TL0 users' do
+      user = Fabricate(:user, trust_level: 1)
+      subject.move_to_state(user, 'new')
+
+      expect(described_class.to_check).to be_empty
+    end
+
+    it 're-checks skipped users' do
+      user = Fabricate(:user, trust_level: 0)
+      subject.move_to_state(user, 'skipped')
+
+      expect(described_class.to_check).to contain_exactly(user)
+    end
+
+    it 'does not check skipped users created more than 24 hours ago' do
+      user = Fabricate(:user, trust_level: 0, created_at: 2.days.ago)
+      subject.move_to_state(user, 'skipped')
+
+      expect(described_class.to_check).to be_empty
     end
   end
 end
