@@ -76,6 +76,10 @@ after_initialize do
     end
   end
 
+  on(:suspect_user_deleted) do |user|
+    DiscourseAkismet::UsersBouncer.new.submit_feedback(user, 'spam')
+  end
+
   staff_actions = %i[confirmed_spam confirmed_ham ignored confirmed_spam_deleted]
   extend_list_method(UserHistory, :staff_actions, staff_actions)
 end
