@@ -5,6 +5,8 @@ require 'rails_helper'
 describe 'ReviewableAkismetUser' do
   let(:guardian) { Guardian.new }
 
+  before { SiteSetting.akismet_enabled = true }
+
   describe '#build_actions' do
     let(:reviewable) { ReviewableAkismetUser.new }
 
@@ -54,7 +56,14 @@ describe 'ReviewableAkismetUser' do
 
   describe 'performing actions on reviewable' do
     let(:admin) { Fabricate(:admin) }
-    let(:user) { Fabricate(:user) }
+
+    let(:user) do
+      Fabricate(:user, trust_level: TrustLevel[0]).tap do |user|
+        user.user_profile.bio_raw = "I am batman"
+        user.user_auth_token_logs = [UserAuthTokenLog.new(client_ip: '127.0.0.1', action: 'an_action')]
+      end
+    end
+
     let(:reviewable) { ReviewableAkismetUser.needs_review!(target: user, created_by: admin) }
 
     before { UserAuthToken.generate!(user_id: user.id) }

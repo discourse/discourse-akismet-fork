@@ -5,6 +5,8 @@ require 'rails_helper'
 describe 'ReviewableAkismetPost' do
   let(:guardian) { Guardian.new }
 
+  before { SiteSetting.akismet_enabled = true }
+
   describe '#build_actions' do
     let(:reviewable) { ReviewableAkismetPost.new }
 
@@ -66,7 +68,7 @@ describe 'ReviewableAkismetPost' do
 
   describe 'Performing actions on reviewable' do
     let(:admin) { Fabricate(:admin) }
-    let(:post) { Fabricate(:post) }
+    let(:post) { Fabricate(:post_with_long_raw_content) }
     let(:reviewable) { ReviewableAkismetPost.needs_review!(target: post, created_by: admin).reload }
 
     before do

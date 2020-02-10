@@ -7,6 +7,7 @@ module DiscourseAkismet
     AKISMET_STATE = 'AKISMET_STATE'
 
     def submit_feedback(target, status)
+      return unless suspect?(target)
       raise Discourse::InvalidParameters.new(:status) unless VALID_STATUSES.include?(status)
       feedback = args_for(target)
 

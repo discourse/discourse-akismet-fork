@@ -13,8 +13,10 @@ module DiscourseAkismet
     end
 
     def should_check?(post)
-      return false if post.blank? || (!SiteSetting.akismet_enabled?)
+      post.present? && SiteSetting.akismet_enabled? && suspect?(post)
+    end
 
+    def suspect?(post)
       # We don't run akismet on private messages
       return false if post.topic.private_message?
 

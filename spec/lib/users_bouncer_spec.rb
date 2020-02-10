@@ -12,6 +12,7 @@ RSpec.describe DiscourseAkismet::UsersBouncer do
   end
 
   before do
+    SiteSetting.akismet_enabled = true
     SiteSetting.akismet_review_users = true
     SiteSetting.akismet_api_key = 'fake_key'
   end

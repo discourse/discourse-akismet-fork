@@ -12,11 +12,16 @@ module DiscourseAkismet
     end
 
     def should_check?(user)
-      SiteSetting.akismet_review_users &&
-        user.trust_level === TrustLevel[0] &&
+      SiteSetting.akismet_enabled &&
+        SiteSetting.akismet_review_users &&
+        !Reviewable.exists?(target: user) &&
+        suspect?(user)
+    end
+
+    def suspect?(user)
+      user.trust_level === TrustLevel[0] &&
         user.user_profile.bio_raw.present? &&
-        user.user_auth_token_logs&.last&.client_ip.present? &&
-        !Reviewable.exists?(target: user)
+        user.user_auth_token_logs&.last&.client_ip.present?
     end
 
     private
