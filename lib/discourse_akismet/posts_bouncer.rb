@@ -113,7 +113,7 @@ module DiscourseAkismet
     end
 
     def notify_poster(post)
-      SystemMessage.new(post.user).create('akismet_spam', topic_title: post.topic.title)
+      SystemMessage.new(post.user).create('akismet_spam', topic_title: post.topic.title, post_link: post.full_url)
     end
 
     def comment_content(post)

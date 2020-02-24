@@ -22,7 +22,7 @@ en:
       text_body_template: |
         Hello,
 
-        Our automated spam filter, [Akismet](https://akismet.com/), has temporarily hidden your post in *%{topic_title}* for review.
+        Our automated spam filter, [Akismet](https://akismet.com/), has temporarily hidden [your post](%{post_link}) in *%{topic_title}* for review.
 
         A [staff member](%{base_url}/about) will review your post soon, and it should appear shortly.
 
