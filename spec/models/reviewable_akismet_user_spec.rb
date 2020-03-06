@@ -33,17 +33,17 @@ describe 'ReviewableAkismetUser' do
 
       actions = reviewable_actions(guardian)
 
-      expect(actions.has?(:reject_user_delete)).to be true
+      expect(actions.has?(:reject_spam_user_delete)).to be true
 
       expect(actions.to_a.
-        find { |a| a.id == :reject_user_delete }.button_class).
+        find { |a| a.id == :reject_spam_user_delete }.button_class).
         to eq("btn-danger")
     end
 
     it 'excludes the confirm delete action when the user is not an staff member' do
       actions = reviewable_actions(guardian)
 
-      expect(actions.has?(:perform_reject_user_delete)).to be false
+      expect(actions.has?(:perform_reject_spam_user_delete)).to be false
     end
 
     def reviewable_actions(guardian)
@@ -116,7 +116,7 @@ describe 'ReviewableAkismetUser' do
     end
 
     describe '#perform_reject_user_delete' do
-      let(:action) { :reject_user_delete }
+      let(:action) { :reject_spam_user_delete }
       let(:action_name) { 'confirmed_spam_deleted' }
       let(:flag_stat_status) { :agreed }
 
@@ -147,14 +147,14 @@ describe 'ReviewableAkismetUser' do
     end
 
     it 'queues a job to approve existing Akismet flagged posts' do
-      expect { reviewable.perform(admin, :reject_user_delete) }.to change(Jobs::ConfirmAkismetFlaggedPosts.jobs, :size).by(1)
+      expect { reviewable.perform(admin, :reject_spam_user_delete) }.to change(Jobs::ConfirmAkismetFlaggedPosts.jobs, :size).by(1)
     end
 
     it 'approved flagged posts by the flagged user' do
       flagged_post = Fabricate(:post, user: user)
       flagged_post_reviewable = ReviewableFlaggedPost.needs_review!(target: flagged_post, created_by: admin)
 
-      reviewable.perform admin, :reject_user_delete
+      reviewable.perform admin, :reject_spam_user_delete
 
       expect(flagged_post_reviewable.reload.status).to eq(Reviewable.statuses[:approved])
     end

@@ -7,7 +7,14 @@ class ReviewableAkismetUser < Reviewable
     return [] unless pending?
 
     build_action(actions, :not_spam, icon: 'thumbs-up')
-    build_action(actions, :reject_user_delete, icon: 'trash-alt', confirm: true, button_class: "btn-danger") if guardian.is_staff?
+
+    if guardian.is_staff?
+      build_action(
+        actions,
+        :reject_spam_user_delete, icon: 'trash-alt',
+                                  confirm: true, button_class: "btn-danger"
+      )
+    end
   end
 
   # Reviewable#perform should be used instead of these action methods.
@@ -20,7 +27,7 @@ class ReviewableAkismetUser < Reviewable
     successful_transition :rejected, :disagreed
   end
 
-  def perform_reject_user_delete(performed_by, _args)
+  def perform_reject_spam_user_delete(performed_by, _args)
     if target && Guardian.new(performed_by).can_delete_user?(target)
       log_confirmation(performed_by, 'confirmed_spam_deleted')
       bouncer.submit_feedback(target, 'spam')
