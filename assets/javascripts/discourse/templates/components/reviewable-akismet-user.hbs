@@ -27,4 +27,13 @@
   </div>
   
   {{yield}}
+
+  {{#if reviewable.payload.external_error}}
+    <div class='reviewable-api-error'>
+      Akismet API Error: 
+      {{{ reviewable.payload.external_error.error }}}
+      ({{{ reviewable.payload.external_error.code }}})
+      - {{{ reviewable.payload.external_error.msg }}}
+    </div>
+  {{/if}}
 </div>

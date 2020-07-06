@@ -115,6 +115,27 @@ module DiscourseAkismet
       move_to_state(post, 'confirmed_ham')
     end
 
+    def mark_as_errored(post, reason)
+      limiter = RateLimiter.new(nil, "akismet_error_#{reason[:code]}", 1, 10.minutes)
+
+      if limiter.can_perform?
+        reviewable = ReviewableAkismetPost.needs_review!(
+          created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true,
+          payload: { post_cooked: post.cooked, external_error: reason }
+        )
+
+        add_score(reviewable, 'akismet_server_error')
+        move_to_state(post, 'needs_review')
+
+        begin
+          limiter.performed!
+        rescue RateLimiter::LimitExceeded
+          # It's OK if we don't review every API error if it's a dupe of a recently seen error
+          nil
+        end
+      end
+    end
+
     def notify_poster(post)
       SystemMessage.new(post.user).create('akismet_spam', topic_title: post.topic.title, post_link: post.full_url)
     end

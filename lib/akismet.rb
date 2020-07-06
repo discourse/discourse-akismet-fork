@@ -11,6 +11,7 @@ class Akismet
     VALID_SUBMIT_RESPONSE = 'Thanks for making the web a better place.'.freeze
     UNKNOWN_ERROR_MESSAGE = 'Unknown error'.freeze
     DEBUG_HEADER = 'X-akismet-debug-help'.freeze
+    ERROR_HEADER = 'X-akismet-error'.freeze
 
     def initialize(api_key:, base_url:)
       @api_url =  "https://#{api_key}.rest.akismet.com/1.1"
@@ -25,12 +26,21 @@ class Akismet
       response = post('comment-check', body)
       response_body = response.body
 
+      if (response.is_a?(Excon::Response) and response.get_header(ERROR_HEADER))
+        api_error = {}
+        api_error[:error] = response.get_header('X-akismet-error')
+        api_error[:code]  = response.get_header('X-akismet-alert-code')
+        api_error[:msg]   = response.get_header('X-akismet-alert-msg')
+
+        return 'error', api_error.compact
+      end
+
       if !(VALID_COMMENT_CHECK_RESPONSE.include?(response_body))
         debug_help = response.headers[DEBUG_HEADER] || UNKNOWN_ERROR_MESSAGE
         raise Akismet::Error.new(debug_help)
       end
 
-      response_body == VALID_COMMENT_CHECK_RESPONSE.first
+      response_body == VALID_COMMENT_CHECK_RESPONSE.first ? 'spam' : 'ham'
     end
 
     def submit_feedback(state, body)

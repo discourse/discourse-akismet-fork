@@ -101,9 +101,35 @@ RSpec.describe DiscourseAkismet::UsersBouncer do
       expect(score.take_action_bonus).to eq(0)
     end
 
+    it "creates a Reviewable if Akismet returns an API error" do
+      expect {
+        subject.perform_check(akismet_api_error, user)
+      }.to change {
+        ReviewableAkismetUser.count
+      }.by(1)
+
+      reviewable = ReviewableAkismetUser.last
+      expect(reviewable.target).to eq(user)
+      expect(reviewable.created_by).to eq(Discourse.system_user)
+      expect(reviewable.reviewable_by_moderator).to eq(true)
+      expect(reviewable.payload['username']).to eq(user.username)
+      expect(reviewable.payload['name']).to eq(user.name)
+      expect(reviewable.payload['email']).to eq(user.email)
+      expect(reviewable.payload['bio']).to eq(user.user_profile.bio_raw)
+
+      score = ReviewableScore.last
+      expect(score.user).to eq(Discourse.system_user)
+    end
+
     def akismet(is_spam:)
       mock("Akismet::Client").tap do |client|
-        client.expects(:comment_check).returns(is_spam)
+        client.expects(:comment_check).returns(is_spam ? 'spam' : 'ham')
+      end
+    end
+
+    def akismet_api_error
+      mock("Akismet::Client").tap do |client|
+        client.expects(:comment_check).returns(['error', { "error" => "status", "code" => "123", "msg" => "An alert message" }])
       end
     end
   end

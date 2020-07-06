@@ -17,16 +17,16 @@ describe Akismet do
   end
 
   describe "#comment_check" do
-    it "should return true if the post is spam" do
+    it "should return 'spam' if the post is spam" do
       Excon.expects(:post).returns(mock_response.new(200, 'true'))
 
-      expect(client.comment_check(post_args)).to eq(true)
+      expect(client.comment_check(post_args)).to eq('spam')
     end
 
-    it "should return false if the post is not spam" do
+    it "should return 'ham' if the post is not spam" do
       Excon.expects(:post).returns(mock_response.new(200, 'false'))
 
-      expect(client.comment_check(post_args)).to eq(false)
+      expect(client.comment_check(post_args)).to eq('ham')
     end
 
     it "should raise an error with the right message if response is not valid" do

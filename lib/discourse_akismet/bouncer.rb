@@ -27,8 +27,15 @@ module DiscourseAkismet
       pre_check_passed = before_check(target)
 
       if pre_check_passed
-        client.comment_check(args_for(target)).tap do |spam_detected|
-          spam_detected ? mark_as_spam(target) : mark_as_clear(target)
+        client.comment_check(args_for(target)).tap do |result, error_status|
+          case result
+          when 'spam'
+            mark_as_spam(target)
+          when 'error'
+            mark_as_errored(target, error_status)
+          else
+            mark_as_clear(target)
+          end
         end
       else
         move_to_state(target, 'skipped')
