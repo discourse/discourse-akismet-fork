@@ -89,6 +89,10 @@ describe DiscourseAkismet::PostsBouncer do
   describe '#check_post' do
     let(:client) { Akismet::Client.build_client }
 
+    after do
+      clear_stubs
+    end
+
     it 'Creates a new ReviewableAkismetPost when spam is confirmed by Akismet' do
       subject.move_to_state(post, 'new')
 
@@ -120,8 +124,39 @@ describe DiscourseAkismet::PostsBouncer do
       expect(reviewable_akismet_score.take_action_bonus).to be_zero
     end
 
+    it 'Creates a new ReviewableAkismetPost when an API error is returned' do
+      subject.move_to_state(post, 'new')
+
+      stub_akismet_error
+
+      subject.perform_check(client, post)
+      reviewable_akismet_post = ReviewableAkismetPost.last
+
+      expect(reviewable_akismet_post.status).to eq Reviewable.statuses[:pending]
+      expect(reviewable_akismet_post.post).to eq post
+      expect(reviewable_akismet_post.reviewable_by_moderator).to eq true
+      expect(reviewable_akismet_post.payload['external_error']['error']).to eq('status')
+      expect(reviewable_akismet_post.payload['external_error']['code']).to eq('123')
+      expect(reviewable_akismet_post.payload['external_error']['msg']).to eq('An alert message')
+    end
+
     def stub_spam_confirmation
-      stub_request(:post, /rest.akismet.com/).to_return(body: 'true')
+      response = { status: 200, body: 'true' }
+
+      Excon.defaults[:mock] = true
+      Excon.stub({ host: /rest.akismet.com/ }, response)
+    end
+
+    def stub_akismet_error
+      headers = { "X-akismet-error" => "status", "X-akismet-alert-code" => "123", "X-akismet-alert-msg" => "An alert message" }
+      response = { status: 200, body: 'false', headers: headers }
+
+      Excon.defaults[:mock] = true
+      Excon.stub({ host: /rest.akismet.com/ }, response)
+    end
+
+    def clear_stubs
+      Excon.stubs.clear
     end
   end
 
