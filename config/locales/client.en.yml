@@ -14,7 +14,7 @@ en:
         skipped: This user doesn't have enough information to be reviewed by Akismet.
         confirmed_ham: Akismet checked this user and decided that it's not spam.
         confirmed_spam: Akismet decided that this user is spam.
-
+      akismet_api_error: "Akismet API Error:"
             
     akismet:
       title: "Akismet"
