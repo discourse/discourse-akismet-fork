@@ -47,9 +47,9 @@ module DiscourseAkismet
     end
 
     def mark_as_errored(user, reason)
-      limiter = RateLimiter.new(nil, "akismet_error_#{reason[:code]}", 1, 10.minutes)
+      limiter = RateLimiter.new(nil, "akismet_error_#{reason[:code].to_i}", 1, 10.minutes)
 
-      if limiter.can_perform?
+      if limiter.performed!(raise_error: false)
         reviewable = ReviewableAkismetUser.needs_review!(
           target: user, reviewable_by_moderator: true,
           created_by: spam_reporter,
@@ -58,13 +58,6 @@ module DiscourseAkismet
 
         add_score(reviewable, 'akismet_server_error')
         move_to_state(user, 'needs_review')
-
-        begin
-          limiter.performed!
-        rescue RateLimiter::LimitExceeded
-          # It's OK if we don't review every API error if it's a dupe of a recently seen error
-          nil
-        end
       end
     end
 
