@@ -12,6 +12,13 @@ Help make this plugin better by submitting a PR.  It's as easy as 1-2-3.
 
 This project uses the MIT-LICENSE.
 
+## Uninstallation
+
+If you wish to uninstall this plugin permanently, you'll have to remove the objects it created **first**. You could do so by executing the following rake task:
+
+`bundle exec rake akismet_uninstall:delete_reviewables`
+
+:warning: THIS ACTION CANNOT BE UNDONE. BE SURE YOU REALLY WANT TO UNINSTALL THE PLUGIN :warning:
 
 ## Issues
 
