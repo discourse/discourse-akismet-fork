@@ -23,6 +23,9 @@ class ReviewableAkismetPost < Reviewable
     bouncer.submit_feedback(post, 'spam')
     log_confirmation(performed_by, 'confirmed_spam')
 
+    # Double-check the original post is deleted
+    PostDestroyer.new(performed_by, post).destroy unless post.deleted_at?
+
     successful_transition :approved, :agreed
   end
 

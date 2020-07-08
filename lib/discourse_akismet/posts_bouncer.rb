@@ -111,21 +111,12 @@ module DiscourseAkismet
       move_to_state(post, 'confirmed_spam')
     end
 
-    def mark_as_clear(post)
-      move_to_state(post, 'confirmed_ham')
-    end
-
     def mark_as_errored(post, reason)
-      limiter = RateLimiter.new(nil, "akismet_error_#{reason[:code].to_i}", 1, 10.minutes)
-
-      if limiter.performed!(raise_error: false)
-        reviewable = ReviewableAkismetPost.needs_review!(
+      super do 
+        ReviewableAkismetPost.needs_review!(
           created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true,
           payload: { post_cooked: post.cooked, external_error: reason }
         )
-
-        add_score(reviewable, 'akismet_server_error')
-        move_to_state(post, 'needs_review')
       end
     end
 

@@ -63,5 +63,29 @@ module DiscourseAkismet
     def spam_reporter
       @spam_reporter ||= Discourse.system_user
     end
+
+    # subclasses must implement "mark_as_spam" to change state/track/log/notify as appropraite
+    def mark_as_spam(target)
+      raise NotImplementedError
+    end
+
+    def mark_as_clear(target)
+      move_to_state(target, 'confirmed_ham')
+    end
+
+    # subclass this, and pass in a block that will create an appropriate Reviewable object
+    def mark_as_errored(target, reason)
+      raise NotImplementedError unless block_given?
+
+      limiter = RateLimiter.new(nil, "akismet_error_#{reason[:code].to_i}", 1, 10.minutes)
+
+      if limiter.performed!(raise_error: false)
+        reviewable = yield 
+
+        add_score(reviewable, 'akismet_server_error')
+        move_to_state(target, 'needs_review')
+      end
+    end
+
   end
 end

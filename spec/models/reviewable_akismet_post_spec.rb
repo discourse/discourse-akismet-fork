@@ -206,4 +206,24 @@ describe 'ReviewableAkismetPost' do
       end
     end
   end
+
+  describe 'Performing actions on reviewable API errors' do
+    let(:admin) { Fabricate(:admin) }
+    let(:post) { Fabricate(:post_with_long_raw_content) }
+    let(:reviewable) { ReviewableAkismetPost.needs_review!(target: post, created_by: admin).reload }
+
+    describe '#perform_confirm_spam' do
+      let(:action) { :confirm_spam }
+
+      it 'Ensures the post has been deleted' do
+        reviewable.perform admin, action
+
+        updated_post = post.reload
+
+        expect(updated_post.deleted_at).not_to eq(nil)
+      end
+
+    end
+
+  end
 end

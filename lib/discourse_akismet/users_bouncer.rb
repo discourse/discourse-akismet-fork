@@ -42,22 +42,13 @@ module DiscourseAkismet
       move_to_state(user, 'confirmed_spam')
     end
 
-    def mark_as_clear(user)
-      move_to_state(user, 'confirmed_ham')
-    end
-
     def mark_as_errored(user, reason)
-      limiter = RateLimiter.new(nil, "akismet_error_#{reason[:code].to_i}", 1, 10.minutes)
-
-      if limiter.performed!(raise_error: false)
-        reviewable = ReviewableAkismetUser.needs_review!(
+      super do 
+        ReviewableAkismetUser.needs_review!(
           target: user, reviewable_by_moderator: true,
           created_by: spam_reporter,
           payload: { username: user.username, name: user.name, email: user.email, bio: user.user_profile.bio_raw, external_error: reason }
         )
-
-        add_score(reviewable, 'akismet_server_error')
-        move_to_state(user, 'needs_review')
       end
     end
 
