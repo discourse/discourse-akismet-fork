@@ -7,27 +7,29 @@ describe DiscourseAkismet::PostsBouncer do
   before do
     SiteSetting.akismet_api_key = 'not_a_real_key'
     SiteSetting.akismet_enabled = true
+
+    @referrer = 'https://discourse.org'
+    @ip_address = '1.2.3.4'
+    @user_agent = 'Discourse Agent'
+
+    subject.store_additional_information(post, {
+      ip_address: @ip_address,
+      user_agent: @user_agent,
+      referrer: @referrer
+    })
   end
 
   let(:post) { Fabricate(:post) }
 
   describe '#args_for' do
-    before do
-      post.upsert_custom_fields(
-        'AKISMET_REFERRER' => 'https://discourse.org',
-        'AKISMET_IP_ADDRESS' => '1.2.3.4',
-        'AKISMET_USER_AGENT' => 'Discourse Agent'
-      )
-    end
-
     it "should return args for a post" do
       result = subject.args_for(post)
       expect(result[:content_type]).to eq('forum-post')
       expect(result[:permalink]).to be_present
       expect(result[:comment_content]).to be_present
-      expect(result[:user_ip]).to eq('1.2.3.4')
-      expect(result[:referrer]).to eq('https://discourse.org')
-      expect(result[:user_agent]).to eq('Discourse Agent')
+      expect(result[:user_ip]).to eq(@ip_address)
+      expect(result[:referrer]).to eq(@referrer)
+      expect(result[:user_agent]).to eq(@user_agent)
       expect(result[:comment_author]).to eq(post.user.username)
       expect(result[:comment_author_email]).to eq(post.user.email)
       expect(result[:blog]).to eq(Discourse.base_url)
@@ -37,6 +39,16 @@ describe DiscourseAkismet::PostsBouncer do
       SiteSetting.akismet_transmit_email = false
       result = subject.args_for(post)
       expect(result[:comment_author_email]).to be_blank
+    end
+
+    it 'works with deleted posts and topics' do
+      topic_title = post.topic.title
+      PostDestroyer.new(Discourse.system_user, post).destroy
+      deleted_post = Post.with_deleted.find(post.id)
+
+      result = subject.args_for(deleted_post)
+
+      expect(result[:comment_content]).to include(topic_title)
     end
 
     context "custom munge" do
@@ -65,21 +77,10 @@ describe DiscourseAkismet::PostsBouncer do
   end
 
   describe "custom fields" do
-    before do
-      subject.store_additional_information(
-        post,
-        ip_address: '1.2.3.5',
-        referrer: 'https://eviltrout.com',
-        user_agent: 'Discourse App',
-       )
-
-       subject.move_to_state(post, 'skipped')
-    end
-
     it "custom fields can be attached and IPs anonymized" do
-      expect(post.custom_fields['AKISMET_IP_ADDRESS']).to eq('1.2.3.5')
-      expect(post.custom_fields['AKISMET_REFERRER']).to eq('https://eviltrout.com')
-      expect(post.custom_fields['AKISMET_USER_AGENT']).to eq('Discourse App')
+      expect(post.custom_fields['AKISMET_IP_ADDRESS']).to eq(@ip_address)
+      expect(post.custom_fields['AKISMET_REFERRER']).to eq(@referrer)
+      expect(post.custom_fields['AKISMET_USER_AGENT']).to eq(@user_agent)
 
       UserAnonymizer.new(post.user, nil, anonymize_ip: '0.0.0.0').make_anonymous
       post.reload

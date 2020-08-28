@@ -68,7 +68,7 @@ module DiscourseAkismet
     def args_for(post)
       extra_args = {
         blog: Discourse.base_url,
-        content_type: 'forum-post',
+        content_type: post.is_first_post? ? 'forum-post' : 'reply',
         referrer: post.custom_fields['AKISMET_REFERRER'],
         permalink: "#{Discourse.base_url}#{post.url}",
         comment_author: post.user.try(:username),
@@ -126,7 +126,10 @@ module DiscourseAkismet
     end
 
     def comment_content(post)
-      post.is_first_post? ? "#{post.topic && post.topic.title}\n\n#{post.raw}" : post.raw
+      return post.raw unless post.is_first_post?
+
+      topic = post.topic || Topic.with_deleted.find_by(id: post.topic_id)
+      "#{topic && topic.title}\n\n#{post.raw}"
     end
   end
 end

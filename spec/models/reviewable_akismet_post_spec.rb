@@ -72,7 +72,7 @@ describe 'ReviewableAkismetPost' do
     let(:reviewable) { ReviewableAkismetPost.needs_review!(target: post, created_by: admin).reload }
 
     before do
-      post.trash!(admin)
+      PostDestroyer.new(admin, post).destroy
     end
 
     shared_examples 'It logs actions in the staff actions logger' do
