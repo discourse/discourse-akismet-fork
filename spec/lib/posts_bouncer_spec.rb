@@ -90,9 +90,9 @@ describe DiscourseAkismet::PostsBouncer do
   describe '#check_post' do
     let(:client) { Akismet::Client.build_client }
 
-    it 'Creates a new ReviewableAkismetPost when spam is confirmed by Akismet' do
-      subject.move_to_state(post, 'new')
+    before { subject.move_to_state(post, 'new') }
 
+    it 'Creates a new ReviewableAkismetPost when spam is confirmed by Akismet' do
       stub_spam_confirmation
 
       subject.perform_check(client, post)
@@ -109,8 +109,6 @@ describe DiscourseAkismet::PostsBouncer do
     end
 
     it 'Creates a new score for the new reviewable' do
-      subject.move_to_state(post, 'new')
-
       stub_spam_confirmation
 
       subject.perform_check(client, post)
@@ -119,6 +117,19 @@ describe DiscourseAkismet::PostsBouncer do
       expect(reviewable_akismet_score.user).to eq Discourse.system_user
       expect(reviewable_akismet_score.reviewable_score_type).to eq PostActionType.types[:spam]
       expect(reviewable_akismet_score.take_action_bonus).to be_zero
+    end
+
+    it 'publishes a message to display a banner on the topic page' do
+      stub_spam_confirmation
+
+      channel = [described_class::TOPIC_DELETED_CHANNEL, post.topic_id].join
+      message = MessageBus.track_publish(channel) do
+        subject.perform_check(client, post)
+      end.first
+
+      data = message.data
+
+      expect(data).to eq("spam_found")
     end
 
     it 'Creates a new ReviewableAkismetPost when an API error is returned' do

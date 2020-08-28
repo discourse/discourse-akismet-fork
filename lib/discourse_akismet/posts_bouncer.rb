@@ -2,7 +2,7 @@
 
 module DiscourseAkismet
   class PostsBouncer < Bouncer
-
+    TOPIC_DELETED_CHANNEL = "/discourse-akismet/topic-deleted/"
     @@munger = nil
 
     def self.to_check
@@ -102,6 +102,14 @@ module DiscourseAkismet
 
       # Send a message to the user explaining that it happened
       notify_poster(post) if SiteSetting.akismet_notify_user?
+
+      if post.is_first_post?
+        MessageBus.publish(
+          [TOPIC_DELETED_CHANNEL, post.topic_id].join,
+          "spam_found",
+          user_ids: [post.user_id]
+        )
+      end
 
       reviewable = ReviewableAkismetPost.needs_review!(
         created_by: spam_reporter, target: post, topic: post.topic, reviewable_by_moderator: true,
