@@ -20,6 +20,7 @@ after_initialize do
   %W[
     jobs/scheduled/check_for_spam_posts
     jobs/scheduled/check_for_spam_users
+    jobs/scheduled/clean_old_akismet_custom_fields
     jobs/regular/check_users_for_spam
     jobs/regular/confirm_akismet_flagged_posts
     jobs/regular/check_akismet_post

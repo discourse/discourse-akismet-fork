@@ -85,6 +85,29 @@ describe DiscourseAkismet::PostsBouncer do
       post.reload
       expect(post.custom_fields['AKISMET_IP_ADDRESS']).to eq('0.0.0.0')
     end
+
+    describe '#clean_old_akismet_custom_fields' do
+      before { subject.move_to_state(post, 'skipped') }
+
+      it 'keeps recent Akismet custom fields' do
+        subject.clean_old_akismet_custom_fields
+
+        post.reload
+
+        expect(post.custom_fields.keys).to contain_exactly(*described_class::CUSTOM_FIELDS)
+      end
+
+      it 'removes old Akismet custom fields' do
+        PostCustomField
+          .where(name: described_class::CUSTOM_FIELDS, post: post)
+          .update_all(created_at: 3.months.ago)
+
+        subject.clean_old_akismet_custom_fields
+
+        post.reload
+        expect(post.custom_fields.keys).to be_empty
+      end
+    end
   end
 
   describe '#check_post' do
