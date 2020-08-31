@@ -11,12 +11,9 @@ module DiscourseAkismet
         .where("ucf.value = 'new' OR (ucf.value = 'skipped' AND users.created_at > ?)", 1.day.ago)
     end
 
-    def should_check?(user)
-      SiteSetting.akismet_review_users? && super(user)
-    end
-
     def suspect?(user)
-      user.trust_level === TrustLevel[0] &&
+      SiteSetting.akismet_review_users? &&
+        user.trust_level === TrustLevel[0] &&
         user.user_profile.bio_raw.present? &&
         user.user_auth_token_logs&.last&.client_ip.present?
     end
@@ -30,10 +27,10 @@ module DiscourseAkismet
         content_type: 'signup',
         permalink: "#{Discourse.base_url}/u/#{user.username_lower}",
         comment_author: user.username,
-        comment_content: profile.bio_raw,
-        comment_author_url: profile.website,
-        user_ip: token.client_ip.to_s,
-        user_agent: token.user_agent
+        comment_content: profile&.bio_raw,
+        comment_author_url: profile&.website,
+        user_ip: token&.client_ip&.to_s,
+        user_agent: token&.user_agent
       }
 
       # Sending the email to akismet is optional
