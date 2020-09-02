@@ -3,13 +3,27 @@
 require_dependency 'reviewable'
 
 class ReviewableAkismetPost < Reviewable
+  def self.action_aliases
+    { confirm_suspend: :confirm_spam }
+  end
+
   def build_actions(actions, guardian, _args)
     return [] unless pending?
 
-    build_action(actions, :confirm_spam, icon: 'check')
-    build_action(actions, :not_spam, icon: 'thumbs-up')
-    build_action(actions, :ignore, icon: 'times')
-    build_action(actions, :confirm_delete, icon: 'trash-alt', confirm: true, button_class: "btn-danger") if guardian.is_staff?
+    agree = actions.add_bundle("#{id}-agree", icon: 'thumbs-up', label: 'reviewables.actions.agree.title')
+
+    build_action(actions, :confirm_spam, icon: 'check', bundle: agree)
+
+    if guardian.can_suspend?(target_created_by)
+      build_action(actions, :confirm_suspend, icon: 'ban', bundle: agree, client_action: 'suspend')
+    end
+
+    if guardian.can_delete_user?(target_created_by)
+      build_action(actions, :confirm_delete, icon: 'trash-alt', bundle: agree, confirm: true)
+    end
+
+    build_action(actions, :not_spam, icon: 'thumbs-down')
+    build_action(actions, :ignore, icon: 'external-link-alt')
   end
 
   def post
@@ -45,10 +59,12 @@ class ReviewableAkismetPost < Reviewable
   end
 
   def perform_confirm_delete(performed_by, _args)
-    if Guardian.new(performed_by).can_delete_user?(post.user)
+    if Guardian.new(performed_by).can_delete_user?(target_created_by)
       bouncer.submit_feedback(post, 'spam')
       log_confirmation(performed_by, 'confirmed_spam_deleted')
-      UserDestroyer.new(performed_by).destroy(post.user, user_deletion_opts(performed_by))
+
+      PostDestroyer.new(performed_by, post).destroy unless post.deleted_at?
+      UserDestroyer.new(performed_by).destroy(target_created_by, user_deletion_opts(performed_by))
     end
 
     successful_transition :deleted, :agreed, recalculate_score: false
@@ -67,11 +83,12 @@ class ReviewableAkismetPost < Reviewable
     end
   end
 
-  def build_action(actions, id, icon:, bundle: nil, confirm: false, button_class: nil)
+  def build_action(actions, id, icon:, bundle: nil, confirm: false, button_class: nil, client_action: nil)
     actions.add(id, bundle: bundle) do |action|
       action.icon = icon
       action.label = "js.akismet.#{id}"
       action.confirm_message = 'js.akismet.reviewable_delete_prompt' if confirm
+      action.client_action = client_action
       action.button_class = button_class
     end
   end

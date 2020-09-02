@@ -8,7 +8,9 @@ describe 'ReviewableAkismetPost' do
   before { SiteSetting.akismet_enabled = true }
 
   describe '#build_actions' do
-    let(:reviewable) { ReviewableAkismetPost.new }
+    let(:reviewable) { ReviewableAkismetPost.new(target: Fabricate(:post)) }
+
+    before { reviewable.created_new! }
 
     it 'Does not return available actions when the reviewable is no longer pending' do
       available_actions = (Reviewable.statuses.keys - [:pending]).reduce([]) do |actions, status|
@@ -46,10 +48,6 @@ describe 'ReviewableAkismetPost' do
       actions = reviewable_actions(guardian)
 
       expect(actions.has?(:confirm_delete)).to be true
-
-      expect(actions.to_a.
-        find { |a| a.id == :confirm_delete }.button_class).
-        to eq("btn-danger")
     end
 
     it 'Excludes the confirm delete action when the user is not an staff member' do
@@ -69,7 +67,7 @@ describe 'ReviewableAkismetPost' do
   describe 'Performing actions on reviewable' do
     let(:admin) { Fabricate(:admin) }
     let(:post) { Fabricate(:post_with_long_raw_content) }
-    let(:reviewable) { ReviewableAkismetPost.needs_review!(target: post, created_by: admin).reload }
+    let(:reviewable) { ReviewableAkismetPost.needs_review!(target: post, created_by: admin) }
 
     before do
       PostDestroyer.new(admin, post).destroy
@@ -195,14 +193,6 @@ describe 'ReviewableAkismetPost' do
         reviewable.perform admin, action
 
         expect(post.reload.user).to be_nil
-      end
-
-      it 'Does not delete the user when it cannot be deleted' do
-        post.update(user: admin)
-
-        reviewable.perform admin, action
-
-        expect(post.reload.user).to be_present
       end
     end
   end

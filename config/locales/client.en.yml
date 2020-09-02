@@ -21,6 +21,7 @@ en:
       confirm_spam: "Confirm Spam"
       not_spam: "Not Spam"
       confirm_delete: "Confirm Spam & Delete User"
+      confirm_suspend: "Confirm Spam & Suspend User"
       reject_spam_user_delete: "Delete User"
       dismiss: "Dismiss"
       ignore: "Ignore"
