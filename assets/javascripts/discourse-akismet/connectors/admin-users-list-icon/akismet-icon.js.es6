@@ -9,5 +9,5 @@ export default {
     component.set("skipped", state === "skipped");
     component.set("checked", state === "confirmed_ham");
     component.set("spam", state === "confirmed_spam");
-  }
+  },
 };

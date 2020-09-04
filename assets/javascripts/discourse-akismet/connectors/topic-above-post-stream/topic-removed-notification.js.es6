@@ -4,5 +4,5 @@ export default {
     component.messageBus.subscribe(akismetDeletedTopicChannel, () => {
       component.set("akismetFlaggedTopic", true);
     });
-  }
+  },
 };
