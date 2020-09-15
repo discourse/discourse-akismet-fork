@@ -203,6 +203,13 @@ describe DiscourseAkismet::PostsBouncer do
 
       expect(described_class.to_check).to be_empty
     end
+
+    it 'does not retrieve posts that already had another reviewable flagged post' do
+      subject.move_to_state(post, 'new')
+      ReviewableFlaggedPost.needs_review!(target: post, created_by: Discourse.system_user)
+
+      expect(described_class.to_check).to be_empty
+    end
   end
 
   describe "#should_check?" do

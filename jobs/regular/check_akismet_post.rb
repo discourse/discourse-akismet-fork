@@ -10,7 +10,7 @@ module Jobs
 
       return unless post = Post.find_by(id: args[:post_id], user_deleted: false)
 
-      return if ReviewableQueuedPost.exists?(target: post)
+      return if Reviewable.exists?(target: post)
 
       client = Akismet::Client.build_client
       DiscourseAkismet::PostsBouncer.new.perform_check(client, post)
