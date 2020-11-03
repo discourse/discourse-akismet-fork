@@ -58,7 +58,7 @@ module DiscourseAkismet
         payload: { username: user.username, name: user.name, email: user.email, bio: user.user_profile.bio_raw }
       )
 
-      add_score(reviewable, 'akismet_spam_user')
+      add_score(reviewable, 'akismet_spam_user', force_review: true)
       move_to_state(user, 'confirmed_spam')
     end
 

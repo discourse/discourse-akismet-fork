@@ -130,7 +130,7 @@ module DiscourseAkismet
         payload: { post_cooked: post.cooked }
       )
 
-      add_score(reviewable, 'akismet_spam_post')
+      add_score(reviewable, 'akismet_spam_post', force_review: true)
       move_to_state(post, 'confirmed_spam')
     end
 
